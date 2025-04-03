@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  c3stock_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: php:8.4-fpm
+    container_name: c3stock_app
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    depends_on:
+      - c3stock_db
+      - c3stock_node
+    networks:
+      - c3stock
+
+  c3stock_node:
+    image: node:18
+    container_name: c3stock_node
+    working_dir: /var/www
+    volumes:
+      - .:/var/www
+    command: tail -f /dev/null
+    ports:
+      - "5176:5176"  # Porta diferente do outro projeto
+    networks:
+      - c3stock
+
+  c3stock_nginx:
+    depends_on:
+      - c3stock_app
+    image: nginx:alpine
+    container_name: c3stock_nginx
+    ports:
+      - "8081:80"  # Agora funciona corretamente
+    volumes:
+      - .:/var/www
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro  # Agora está correto
+    networks:
+      - c3stock
+
+
+  c3stock_db:
+    image: mysql:8.0
+    container_name: c3stock_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: c3stock
+      MYSQL_USER: c3stock_user
+      MYSQL_PASSWORD: c3stock_password
+    volumes:
+      - dbdata_c3stock:/var/lib/mysql
+    networks:
+      - c3stock
+
+networks:
+  c3stock:
+
+volumes:
+  dbdata_c3stock:
