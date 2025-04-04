@@ -23,7 +23,7 @@
                     Estoque de Insumos
                 </x-nav-link>
                 <x-nav-link :href="route('pedidos.create')" :active="request()->routeIs('pedidos.create')">
-                        📦 Solicitar Insumos
+                        Fazer Solicitação
                     </x-nav-link>
                 </div>
             </div>

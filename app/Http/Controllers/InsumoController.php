@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\PedidoInsumos;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
+use App\Models\Team; // Se estiver usando Jetstream Teams
+use Illuminate\Support\Facades\Auth;
 
 class InsumoController extends Controller
 {
@@ -108,18 +110,20 @@ public function sendPedido(Request $request)
         'items.*.quantidade' => 'required|numeric|min:1',
     ]);
 
-    $pedido_id = rand(1000, 9999); // Gera um número único para o pedido
+    $pedido_id = rand(1000, 9999); // Número do pedido
+    $usuario = Auth::user(); // Obtém o usuário autenticado
+    $equipe = $usuario->currentTeam ? $usuario->currentTeam->name : 'Sem equipe'; // Obtém a equipe vinculada ao usuário
 
     $insumosSelecionados = collect($data['items'])->map(function ($item) {
-        $insumo = Insumo::find($item['insumo_id']);
+        $insumo = \App\Models\Insumo::find($item['insumo_id']);
         return [
             'nome' => $insumo->nome,
             'quantidade' => $item['quantidade'],
         ];
-    })->toArray(); // Transforma em array para evitar possíveis problemas de coleção
+    })->toArray();
 
     // Enviar e-mail para o financeiro
-    Mail::to('financeiro@c3ocupacional.com')->send(new PedidoInsumos($insumosSelecionados, $pedido_id));
+    Mail::to('financeiro@c3ocupacional.com')->send(new PedidoInsumos($insumosSelecionados, $pedido_id, $usuario->name, $equipe));
 
     return redirect()->back()->with('success', 'Pedido enviado com sucesso! 📩');
 }

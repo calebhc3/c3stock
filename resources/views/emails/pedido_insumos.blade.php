@@ -21,6 +21,14 @@
                         </td>
                     </tr>
 
+                    <!-- Informações do Usuário -->
+                    <tr>
+                        <td style="padding-bottom: 20px;">
+                            <p style="color: #2c3e50; font-size: 16px;"><strong>Solicitante:</strong> {{ $usuario }}</p>
+                            <p style="color: #2c3e50; font-size: 16px;"><strong>Unidade:</strong> {{ $equipe }}</p>
+                        </td>
+                    </tr>
+
                     <!-- Tabela de Itens -->
                     <tr>
                         <td>
@@ -46,7 +54,6 @@
                     <!-- Rodapé -->
                     <tr>
                         <td style="text-align: center; padding-top: 20px; font-size: 14px; color: #7f8c8d;">
-                            <p>📌 Este e-mail foi enviado automaticamente pelo sistema de controle de estoque da <strong>C3 Saúde Ocupacional</strong>.</p>
                             <p>📞 Em caso de dúvidas, entre em contato com o setor responsável.</p>
                         </td>
                     </tr>
