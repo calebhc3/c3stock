@@ -15,11 +15,18 @@ class Insumo extends Model
         'quantidade_minima',
         'unidade_medida',
         'quantidade_existente',
+        'team_id'
+
     ];
 
     // Accessor para o campo "necessario_comprar"
     public function getNecessarioComprarAttribute()
     {
         return max($this->quantidade_minima - $this->quantidade_existente, 0);
+    }
+    
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
     }
 }

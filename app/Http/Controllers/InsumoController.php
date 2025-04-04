@@ -11,7 +11,7 @@ class InsumoController extends Controller
 {
     public function index()
     {
-        $insumos = Insumo::all();
+        $insumos = Insumo::where('team_id', auth()->user()->currentTeam->id)->get();
         return view('insumos.index', compact('insumos'));
     }
 
@@ -30,7 +30,16 @@ class InsumoController extends Controller
             'quantidade_existente' => 'required|integer|min:0',
         ]);
 
-        Insumo::create($request->all());
+        Insumo::create([
+            'nome' => $request->nome,
+            'tipo' => $request->tipo,
+            'quantidade_minima' => $request->quantidade_minima,
+            'unidade_medida' => $request->unidade_medida,
+            'quantidade_existente' => $request->quantidade_existente,
+            'necessario_comprar' => max(0, $request->quantidade_minima - $request->quantidade_existente),
+            'team_id' => auth()->user()->currentTeam->id,
+        ]);
+    
 
         return redirect()->route('insumos.index')->with('success', 'Insumo criado com sucesso!');
     }

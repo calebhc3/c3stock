@@ -4,11 +4,14 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Insumo;
+use App\Models\Team;
 
 class InsumoSeeder extends Seeder
 {
     public function run()
     {
+        $team = Team::first(); // Pega a primeira equipe (ou altera para pegar outra específica)
+
         $itens = [
             // Insumos
             ['nome' => 'Algodão bolinha', 'tipo' => 'Insumo', 'unidade_medida' => 'pacote', 'quantidade_minima' => 10],
@@ -69,7 +72,7 @@ class InsumoSeeder extends Seeder
         ];
 
         foreach ($itens as $item) {
-            Insumo::create($item + ['quantidade_existente' => 0]);
+            Insumo::create(array_merge($item, ['team_id' => $team->id]));
         }
     }
 }
