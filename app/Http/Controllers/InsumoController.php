@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Mail;
+use App\Mail\PedidoInsumos;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
 
@@ -81,6 +83,36 @@ public function dashboard()
         'ultimaAtualizacao' => \App\Models\Insumo::latest()->first()?->updated_at?->format('d/m/Y H:i'),
         'ultimosInsumos' => \App\Models\Insumo::latest()->take(5)->get(),
     ]);
+}
+
+public function createPedido()
+{
+    $insumos = Insumo::all();
+    return view('pedidos.create', compact('insumos'));
+}
+
+public function sendPedido(Request $request)
+{
+    $data = $request->validate([
+        'items' => 'required|array',
+        'items.*.insumo_id' => 'required|exists:insumos,id',
+        'items.*.quantidade' => 'required|numeric|min:1',
+    ]);
+
+    $pedido_id = rand(1000, 9999); // Gera um número único para o pedido
+
+    $insumosSelecionados = collect($data['items'])->map(function ($item) {
+        $insumo = Insumo::find($item['insumo_id']);
+        return [
+            'nome' => $insumo->nome,
+            'quantidade' => $item['quantidade'],
+        ];
+    })->toArray(); // Transforma em array para evitar possíveis problemas de coleção
+
+    // Enviar e-mail para o financeiro
+    Mail::to('financeiro@c3ocupacional.com')->send(new PedidoInsumos($insumosSelecionados, $pedido_id));
+
+    return redirect()->back()->with('success', 'Pedido enviado com sucesso! 📩');
 }
 
 }
