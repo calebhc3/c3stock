@@ -59,4 +59,28 @@ class InsumoController extends Controller
 
         return redirect()->route('insumos.index')->with('success', 'Insumo excluído com sucesso!');
     }
+
+    public function updateQuantidadeMinima(Request $request, Insumo $insumo)
+{
+    $request->validate(['quantidade_minima' => 'required|numeric|min:0']);
+    $insumo->update(['quantidade_minima' => $request->quantidade_minima]);
+    return back()->with('success', 'Quantidade mínima atualizada.');
+}
+
+public function updateQuantidadeExistente(Request $request, Insumo $insumo)
+{
+    $request->validate(['quantidade_existente' => 'required|numeric|min:0']);
+    $insumo->update(['quantidade_existente' => $request->quantidade_existente]);
+    return back()->with('success', 'Quantidade existente atualizada.');
+}
+public function dashboard()
+{
+    return view('dashboard', [
+        'totalInsumos' => \App\Models\Insumo::count(),
+        'itensCriticos' => \App\Models\Insumo::whereColumn('quantidade_existente', '<', 'quantidade_minima')->count(),
+        'ultimaAtualizacao' => \App\Models\Insumo::latest()->first()?->updated_at?->format('d/m/Y H:i'),
+        'ultimosInsumos' => \App\Models\Insumo::latest()->take(5)->get(),
+    ]);
+}
+
 }
