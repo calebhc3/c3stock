@@ -10,6 +10,7 @@ class PedidoInsumos extends Mailable
 {
     use Queueable, SerializesModels;
 
+    
     public $itens;
     public $pedido_id;
     public $usuario;

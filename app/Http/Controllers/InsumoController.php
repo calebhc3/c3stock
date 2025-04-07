@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use App\Models\Team; // Se estiver usando Jetstream Teams
 use Illuminate\Support\Facades\Auth;
 use App\Models\LogMovimentacao;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Storage;
+use App\Exports\PedidoInsumosExport;
 
 class InsumoController extends Controller
 {
@@ -147,9 +150,9 @@ public function sendPedido(Request $request)
         'items.*.quantidade' => 'required|numeric|min:1',
     ]);
 
-    $pedido_id = rand(1000, 9999); // Número do pedido
-    $usuario = Auth::user(); // Obtém o usuário autenticado
-    $equipe = $usuario->currentTeam ? $usuario->currentTeam->name : 'Sem equipe'; // Obtém a equipe vinculada ao usuário
+    $pedido_id = rand(1000, 9999);
+    $usuario = Auth::user();
+    $equipe = $usuario->currentTeam ? $usuario->currentTeam->name : 'Sem equipe';
 
     $insumosSelecionados = collect($data['items'])->map(function ($item) {
         $insumo = \App\Models\Insumo::find($item['insumo_id']);
@@ -159,12 +162,19 @@ public function sendPedido(Request $request)
         ];
     })->toArray();
 
-    // Enviar e-mail para o financeiro
-    Mail::to('financeiro@c3saudeocupacional.com')->send(new PedidoInsumos($insumosSelecionados, $pedido_id, $usuario->name, $equipe));
+    // Aqui passa os parâmetros novos
+    $export = new PedidoInsumosExport($insumosSelecionados, $usuario->name, $equipe, $pedido_id);
+    $excel = Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
 
-    return redirect()->back()->with('success', 'Pedido enviado com sucesso! 📩');
+    Mail::to('financeiro@c3saudeocupacional.com')->send(
+        (new PedidoInsumos($insumosSelecionados, $pedido_id, $usuario->name, $equipe))
+            ->attachData($excel, "pedido_{$pedido_id}.xlsx", [
+                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ])
+    );
+
+    return redirect()->back()->with('success', 'Pedido enviado com sucesso! 📩 Excel anexado!');
 }
-
     public function historicoMovimentacao()
     {
         $logs = LogMovimentacao::with('user', 'insumo')
