@@ -38,27 +38,31 @@
                 </div>
             </div>
 
-            {{-- Tabela recente (opcional) --}}
-            @if(isset($ultimosInsumos) && $ultimosInsumos->count())
+            {{-- Log de Ações --}}
+            @if(isset($logMovimentacoes) && $logMovimentacoes->count())
                 <div class="bg-white p-6 rounded-xl shadow">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Últimos insumos cadastrados</h3>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">📜 Log de Movimentações</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left text-gray-700">
                             <thead class="bg-gray-200 text-gray-800 uppercase text-xs font-bold tracking-wider">
                                 <tr>
-                                    <th class="px-4 py-2">Nome</th>
-                                    <th class="px-4 py-2">Tipo</th>
-                                    <th class="px-4 py-2">Qtd. Existente</th>
-                                    <th class="px-4 py-2">Criado em</th>
+                                    <th class="px-4 py-2">Usuário</th>
+                                    <th class="px-4 py-2">Ação</th>
+                                    <th class="px-4 py-2">Insumo</th>
+                                    <th class="px-4 py-2">Quantidade</th>
+                                    <th class="px-4 py-2">Data</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                @foreach($ultimosInsumos as $insumo)
+                                @foreach($logMovimentacoes as $log)
                                     <tr>
-                                        <td class="px-4 py-2">{{ $insumo->nome }}</td>
-                                        <td class="px-4 py-2">{{ ucfirst($insumo->tipo) }}</td>
-                                        <td class="px-4 py-2">{{ $insumo->quantidade_existente }}</td>
-                                        <td class="px-4 py-2">{{ $insumo->created_at->format('d/m/Y') }}</td>
+                                        <td class="px-4 py-2">{{ $log->usuario->name }}</td>
+                                        <td class="px-4 py-2">{{ ucfirst($log->acao) }}</td>
+                                        <td class="px-4 py-2">{{ $log->insumo->nome }}</td>
+                                        <td class="px-4 py-2 font-bold {{ $log->quantidade < 0 ? 'text-red-600' : 'text-green-600' }}">
+                                            {{ $log->quantidade }}
+                                        </td>
+                                        <td class="px-4 py-2">{{ $log->created_at->format('d/m/Y H:i') }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
