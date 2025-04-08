@@ -18,69 +18,57 @@ class InsumoController extends Controller
 
     public function dashboard()
     {
-        return view('dashboard', [
-            'totalInsumos' => \App\Models\Insumo::count(),
-            'itensCriticos' => \App\Models\Insumo::whereColumn('quantidade_existente', '<', 'quantidade_minima')->count(),
-            'ultimaAtualizacao' => \App\Models\Insumo::latest()->first()?->updated_at?->format('d/m/Y H:i'),
-            'ultimosInsumos' => \App\Models\Insumo::latest()->take(5)->get(),
-            'logMovimentacoes' => LogMovimentacao::with('user', 'insumo')->latest()->limit(10)->get()
-        ]);
+        $team = auth()->user()->currentTeam;
+    
+        $insumos = $team->insumos()->withPivot(['quantidade_minima', 'quantidade_existente'])->get();
+    
+        $totalInsumos = $insumos->count();
+    
+        $itensCriticos = $insumos->filter(function ($insumo) {
+            return $insumo->pivot->quantidade_existente < $insumo->pivot->quantidade_minima;
+        })->count();
+    
+        $ultimaAtualizacao = LogMovimentacao::latest()->first()?->created_at?->format('d/m/Y H:i') ?? '—';
+    
+        return view('dashboard', compact('totalInsumos', 'itensCriticos', 'ultimaAtualizacao'));
     }
-
+    
     public function index()
     {
-        $insumos = Insumo::where('team_id', auth()->user()->currentTeam->id)->get();
+        $user = auth()->user();
+        $team = $user->currentTeam;
+    
+        $insumos = $team->insumos()
+            ->withPivot(['quantidade_minima', 'quantidade_existente'])
+            ->orderBy('nome')
+            ->get();
+    
         return view('insumos.index', compact('insumos'));
     }
-
-    public function create()
-    {
-        return view('insumos.create');
-    }
-
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nome' => 'required|string|max:255',
-            'tipo' => 'required|string',
-            'quantidade_minima' => 'required|integer|min:0',
-            'unidade_medida' => 'required|string|max:50',
-            'quantidade_existente' => 'required|integer|min:0',
-        ]);
-
-        $insumo = Insumo::create([
-            'nome' => $request->nome,
-            'tipo' => $request->tipo,
-            'quantidade_minima' => $request->quantidade_minima,
-            'unidade_medida' => $request->unidade_medida,
-            'quantidade_existente' => $request->quantidade_existente,
-            'necessario_comprar' => max(0, $request->quantidade_minima - $request->quantidade_existente),
-            'team_id' => auth()->user()->currentTeam->id,
-        ]);
-
-        // Registrar no log
-        LogMovimentacao::create([
-            'user_id' => Auth::id(),
-            'insumo_id' => $insumo->id,
-            'tipo_acao' => 'entrada',
-            'quantidade' => $request->quantidade_existente,
-            'quantidade_final' => $insumo->quantidade_existente,
-        ]);
-
-        return redirect()->route('insumos.index')->with('success', 'Insumo criado com sucesso!');
-    }
-
+    
     public function updateQuantidadeMinima(Request $request, Insumo $insumo)
     {
         $request->validate(['quantidade_minima' => 'required|numeric|min:0']);
     
-        $quantidadeAnterior = $insumo->quantidade_minima;
-        $insumo->update(['quantidade_minima' => $request->quantidade_minima]);
+        $team = auth()->user()->currentTeam;
     
-        // Registrar no log apenas se houver mudança
-        if ($quantidadeAnterior !== $request->quantidade_minima) {
+        $pivot = $insumo->estoques()->where('team_id', $team->id)->first()?->pivot;
+    
+        if (!$pivot) {
+            return back()->with('error', 'Insumo não está vinculado ao time atual.');
+        }
+    
+        $quantidadeAnterior = $pivot->quantidade_minima;
+    
+        $insumo->estoques()->updateExistingPivot($team->id, [
+            'quantidade_minima' => $request->quantidade_minima,
+        ]);
+    
+        // Sem necessidade de $insumo->save(), pois estamos mexendo na pivot
+    
+        if ($quantidadeAnterior !== floatval($request->quantidade_minima)) {
             LogMovimentacao::create([
-                'user_id' => Auth::id(),
+                'user_id' => auth()->id(),
                 'insumo_id' => $insumo->id,
                 'tipo_acao' => 'edicao',
                 'quantidade' => abs($request->quantidade_minima - $quantidadeAnterior),
@@ -88,20 +76,30 @@ class InsumoController extends Controller
             ]);
         }
     
-        return back()->with('success', 'Quantidade mínima atualizada.');
+        return back()->with('success', 'Quantidade mínima atualizada com sucesso.');
     }
     
     public function updateQuantidadeExistente(Request $request, Insumo $insumo)
     {
         $request->validate(['quantidade_existente' => 'required|numeric|min:0']);
     
-        $quantidadeAnterior = $insumo->quantidade_existente;
-        $insumo->update(['quantidade_existente' => $request->quantidade_existente]);
+        $team = auth()->user()->currentTeam;
     
-        // Registrar no log apenas se houver mudança
-        if ($quantidadeAnterior !== $request->quantidade_existente) {
+        $pivot = $insumo->estoques()->where('team_id', $team->id)->first()?->pivot;
+    
+        if (!$pivot) {
+            return back()->with('error', 'Insumo não está vinculado ao time atual.');
+        }
+    
+        $quantidadeAnterior = $pivot->quantidade_existente;
+    
+        $insumo->estoques()->updateExistingPivot($team->id, [
+            'quantidade_existente' => $request->quantidade_existente,
+        ]);
+    
+        if ($quantidadeAnterior !== floatval($request->quantidade_existente)) {
             LogMovimentacao::create([
-                'user_id' => Auth::id(),
+                'user_id' => auth()->id(),
                 'insumo_id' => $insumo->id,
                 'tipo_acao' => $request->quantidade_existente > $quantidadeAnterior ? 'entrada' : 'ajuste',
                 'quantidade' => abs($request->quantidade_existente - $quantidadeAnterior),
@@ -109,36 +107,46 @@ class InsumoController extends Controller
             ]);
         }
     
-        return back()->with('success', 'Quantidade existente atualizada.');
+        return back()->with('success', 'Quantidade existente atualizada com sucesso.');
     }
     
     public function removerEstoque(Request $request, $id)
     {
         $insumo = Insumo::findOrFail($id);
         $quantidadeRemovida = $request->quantidade;
-
-        if ($insumo->quantidade_existente < $quantidadeRemovida) {
+        $team = auth()->user()->currentTeam;
+    
+        $pivot = $insumo->estoques()->where('team_id', $team->id)->first()?->pivot;
+    
+        if (!$pivot) {
+            return back()->with('error', 'Insumo não está vinculado ao time atual.');
+        }
+    
+        if ($pivot->quantidade_existente < $quantidadeRemovida) {
             return back()->with('error', 'Quantidade insuficiente no estoque.');
         }
-
-        $insumo->quantidade_existente -= $quantidadeRemovida;
-        $insumo->save();
-
-        // Registrar no log
+    
+        $novaQuantidade = $pivot->quantidade_existente - $quantidadeRemovida;
+    
+        $insumo->estoques()->updateExistingPivot($team->id, [
+            'quantidade_existente' => $novaQuantidade,
+        ]);
+    
         LogMovimentacao::create([
-            'user_id' => Auth::id(),
+            'user_id' => auth()->id(),
             'insumo_id' => $insumo->id,
             'tipo_acao' => 'saida',
             'quantidade' => $quantidadeRemovida,
-            'quantidade_final' => $insumo->quantidade_existente,
+            'quantidade_final' => $novaQuantidade,
         ]);
-
+    
         return back()->with('success', 'Saída registrada com sucesso.');
     }
+    
 
     public function createPedido()
 {
-    $insumos = Insumo::all();
+    $insumos = auth()->user()->currentTeam->insumos;
     return view('pedidos.create', compact('insumos'));
 }
 
@@ -185,5 +193,43 @@ public function sendPedido(Request $request)
             ->paginate(10);
 
         return view('insumos.historico', compact('logs'));
+    }
+        
+
+    public function create()
+    {
+        return view('insumos.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'nome' => 'required|string|max:255',
+            'tipo' => 'required|string',
+            'quantidade_minima' => 'required|integer|min:0',
+            'unidade_medida' => 'required|string|max:50',
+            'quantidade_existente' => 'required|integer|min:0',
+        ]);
+
+        $insumo = Insumo::create([
+            'nome' => $request->nome,
+            'tipo' => $request->tipo,
+            'quantidade_minima' => $request->quantidade_minima,
+            'unidade_medida' => $request->unidade_medida,
+            'quantidade_existente' => $request->quantidade_existente,
+            'necessario_comprar' => max(0, $request->quantidade_minima - $request->quantidade_existente),
+            'team_id' => auth()->user()->currentTeam->id,
+        ]);
+
+        // Registrar no log
+        LogMovimentacao::create([
+            'user_id' => Auth::id(),
+            'insumo_id' => $insumo->id,
+            'tipo_acao' => 'entrada',
+            'quantidade' => $request->quantidade_existente,
+            'quantidade_final' => $insumo->quantidade_existente,
+        ]);
+
+        return redirect()->route('insumos.index')->with('success', 'Insumo criado com sucesso!');
     }
 }

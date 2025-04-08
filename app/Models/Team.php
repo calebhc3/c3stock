@@ -45,4 +45,11 @@ class Team extends JetstreamTeam
             'personal_team' => 'boolean',
         ];
     }
+    public function insumos()
+    {
+        return $this->belongsToMany(Insumo::class, 'insumo_team')
+            ->withPivot('quantidade_existente', 'quantidade_minima')
+            ->withTimestamps();
+    }
+
 }

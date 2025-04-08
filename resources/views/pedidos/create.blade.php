@@ -11,6 +11,17 @@
 
     <div class="py-4 flex justify-center">
         <div class="max-w-7xl bg-white shadow-md rounded-lg p-4 border border-gray-300">
+        @php
+            $hoje = now();
+            $dia = $hoje->day;
+            $podePedir = in_array($dia, [1, 8, 15]);
+        @endphp
+
+        @if(!$podePedir)
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded text-sm text-center mb-4">
+                ⚠️ Os pedidos só podem ser feitos nos dias <strong>1</strong> e <strong>15</strong> de cada mês. Hoje é dia {{ $dia }}.
+            </div>
+        @endif
             <h3 class="text-md font-semibold text-gray-700 text-center mb-4">🛒 Pedido de Insumos</h3>
 
             <form method="POST" action="{{ route('pedidos.send') }}" class="space-y-3">
@@ -34,9 +45,16 @@
                 </button>
 
                 <!-- Botão de Enviar Pedido -->
+                @if($podePedir)
                 <x-button type="submit" class="w-full px-3 mt-10 py-1 text-white bg-green-600 text-sm rounded-md hover:bg-green-700 transition">
                     📬 Enviar Pedido
                 </x-button>
+            @else
+                <button type="button" disabled class="w-full px-3 mt-10 py-1 bg-gray-300 text-gray-500 text-sm rounded-md cursor-not-allowed">
+                    🚫 Pedido indisponível hoje
+                </button>
+            @endif
+
             </form>
         </div>
     </div>

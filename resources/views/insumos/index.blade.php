@@ -35,43 +35,45 @@
         <td class="px-6 py-4">{{ ucfirst($insumo->tipo) }}</td>
 
         {{-- Qtd. Mínima (Editável) --}}
-        <td class="px-6 py-4">
-            <form action="{{ route('insumos.updateQuantidadeMinima', $insumo->id) }}" method="POST" class="inline-form">
-                @csrf
-                @method('PATCH')
-                <input 
-                    type="number" 
-                    name="quantidade_minima" 
-                    value="{{ $insumo->quantidade_minima }}" 
-                    class="w-16 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onblur="this.form.submit()"
-                    onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
-                />
-            </form>
-        </td>
+<td class="px-6 py-4">
+    <form action="{{ route('insumos.updateQuantidadeMinima', $insumo->id) }}" method="POST" class="inline-form">
+        @csrf
+        @method('PATCH')
+        <input 
+            type="number" 
+            name="quantidade_minima" 
+            value="{{ $insumo->pivot->quantidade_minima }}" 
+            class="w-16 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onblur="this.form.submit()"
+            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
+        />
+    </form>
+</td>
 
-        <td class="px-6 py-4">{{ $insumo->unidade_medida }}</td>
+<td class="px-6 py-4">{{ $insumo->unidade_medida }}</td>
 
-        {{-- Qtd. Existente (Editável) --}}
-        <td class="px-6 py-4">
-            <form action="{{ route('insumos.updateQuantidadeExistente', $insumo->id) }}" method="POST" class="inline-form">
-                @csrf
-                @method('PATCH')
-                <input 
-                    type="number" 
-                    name="quantidade_existente" 
-                    value="{{ $insumo->quantidade_existente }}" 
-                    class="w-16 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    onblur="this.form.submit()"
-                    onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
-                />
-            </form>
-        </td>
+{{-- Qtd. Existente (Editável) --}}
+<td class="px-6 py-4">
+    <form action="{{ route('insumos.updateQuantidadeExistente', $insumo->id) }}" method="POST" class="inline-form">
+        @csrf
+        @method('PATCH')
+        <input 
+            type="number" 
+            name="quantidade_existente" 
+            value="{{ $insumo->pivot->quantidade_existente }}" 
+            class="w-16 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onblur="this.form.submit()"
+            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
+        />
+    </form>
+</td>
+
 
         {{-- Comprar? --}}
         <td class="px-6 py-4 font-semibold {{ $insumo->necessario_comprar > 0 ? 'text-red-600' : 'text-green-600' }}">
             {{ $insumo->necessario_comprar }}
         </td>
+
     </tr>
 @endforeach
 

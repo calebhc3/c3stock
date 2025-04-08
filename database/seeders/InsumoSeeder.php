@@ -10,8 +10,12 @@ class InsumoSeeder extends Seeder
 {
     public function run()
     {
-        $team = Team::first(); // Pega a primeira equipe (ou altera para pegar outra específica)
+        $team = Team::first();
 
+        if (!$team) {
+            $this->command->error('Nenhuma equipe encontrada. Crie uma team antes de rodar o seeder de insumos.');
+            return;
+        }
         $itens = [
             // Insumos
             ['nome' => 'Algodão bolinha', 'tipo' => 'Insumo', 'unidade_medida' => 'pacote', 'quantidade_minima' => 10],
@@ -72,8 +76,23 @@ class InsumoSeeder extends Seeder
         ];
 
         foreach ($itens as $item) {
-            Insumo::create(array_merge($item, ['team_id' => $team->id]));
+            $insumo = Insumo::firstOrCreate(
+                ['nome' => $item['nome']],
+                [
+                    'tipo' => $item['tipo'],
+                    'unidade_medida' => $item['unidade_medida']
+                ]
+            );
+
+            // Associa à equipe com valores na tabela pivot
+            $insumo->estoques()->syncWithoutDetaching([
+                $team->id => [
+                    'quantidade_minima' => $item['quantidade_minima'],
+                    'quantidade_existente' => 0 // aqui agora!
+                ]
+            ]);
+
+            $this->command->info("Insumo '{$item['nome']}' processado e vinculado ao time com quantidade mínima e existente na pivot.");
         }
     }
 }
-
