@@ -27,9 +27,8 @@ Route::middleware([
     Route::get('/insumos/{insumo}/editar', [InsumoController::class, 'edit'])->name('insumos.edit');
     Route::put('/insumos/{insumo}', [InsumoController::class, 'update'])->name('insumos.update');
     Route::delete('/insumos/{insumo}', [InsumoController::class, 'destroy'])->name('insumos.destroy');
-    Route::patch('/insumos/{insumo}/quantidade-minima', [InsumoController::class, 'updateQuantidadeMinima'])->name('insumos.updateQuantidadeMinima');
-    Route::patch('/insumos/{insumo}/quantidade-existente', [InsumoController::class, 'updateQuantidadeExistente'])->name('insumos.updateQuantidadeExistente');
-    
+    Route::post('/insumos/{insumo}/alterar-quantidade', [InsumoController::class, 'alterarQuantidade'])->name('insumos.alterar.quantidade');
+
     Route::get('/pedidos/create', [InsumoController::class, 'createPedido'])->name('pedidos.create');
     Route::post('/pedidos/send', [InsumoController::class, 'sendPedido'])->name('pedidos.send');
     Route::post('/pedidos/exportar', function (\Illuminate\Http\Request $request) {

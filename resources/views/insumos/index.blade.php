@@ -7,8 +7,8 @@
     </x-slot>
 
     <div class="py-8">
-    <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6"> <!-- Alterado para max-w-4xl -->
-
+        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            
             {{-- Notificação --}}
             @if(session('success'))
                 <div class="mb-4 p-4 bg-green-100 border border-green-300 text-green-800 rounded-lg shadow-sm">
@@ -17,66 +17,55 @@
             @endif
 
             {{-- Tabela --}}
-            <div class="bg-white shadow rounded-xl overflow-hidden"> <!-- Adicionado overflow-hidden -->                <div class="overflow-x-auto">
-            <table class="w-full text-sm text-gray-700"> <!-- De min-w-full para w-full -->                        <thead class="bg-gray-200 text-gray-800 uppercase text-xs font-bold tracking-wider border-b">
+            <div class="bg-white shadow rounded-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-gray-700">
+                        <thead class="bg-gray-200 text-gray-800 uppercase text-xs font-bold tracking-wider border-b">
                             <tr>
                                 <th class="px-6 py-4 text-left">Nome</th>
-                                <th class="px-6 py-4 text-left">Tipo</th>
                                 <th class="px-6 py-4 text-left">Qtd. Mínima</th>
-                                <th class="px-6 py-4 text-left">Unidade</th>
                                 <th class="px-6 py-4 text-left">Qtd. Existente</th>
+                                <th class="px-6 py-4 text-left">Unidade</th>
                                 <th class="px-6 py-4 text-left">Comprar?</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
-                        @foreach($insumos as $insumo)
-    <tr class="{{ $loop->even ? 'bg-gray-50' : 'bg-white' }} hover:bg-blue-50 transition">
-        <td class="px-6 py-4">{{ $insumo->nome }}</td>
-        <td class="px-6 py-4">{{ ucfirst($insumo->tipo) }}</td>
+                            @foreach($insumos as $insumo)
+                                <tr class="{{ $loop->even ? 'bg-gray-50' : 'bg-white' }} hover:bg-blue-50 transition">
+                                    <td class="px-6 py-4">{{ $insumo->nome }}</td>
+                                    <td class="px-6 py-4">{{ $insumo->pivot->quantidade_minima }}</td>
 
-        {{-- Qtd. Mínima (Editável) --}}
-<td class="px-6 py-4">
-    <form action="{{ route('insumos.updateQuantidadeMinima', $insumo->id) }}" method="POST" class="inline-form">
-        @csrf
-        @method('PATCH')
-        <input 
-            type="number" 
-            name="quantidade_minima" 
-            value="{{ $insumo->pivot->quantidade_minima }}" 
-            class="w-16 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onblur="this.form.submit()"
-            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
-        />
-    </form>
-</td>
+                                    {{-- Qtd. Existente com botões --}}
+                                    <td class="px-6 py-4">
+                                        <div class="flex items-center gap-2">
+                                            {{-- Botão de - --}}
+                                            <form method="POST" action="{{ route('insumos.alterar.quantidade', $insumo) }}">
+                                                @csrf
+                                                <input type="hidden" name="acao" value="saida">
+                                                <x-button class="bg-red-500 text-white w-6 h-6 rounded-full hover:bg-red-600 text-xs font-bold leading-none flex items-center justify-center">−</x-button>
+                                                </form>
 
-<td class="px-6 py-4">{{ $insumo->unidade_medida }}</td>
+                                            <span class="w-8 text-center font-semibold text-gray-800">
+                                                {{ $insumo->pivot->quantidade_existente }}
+                                            </span>
 
-{{-- Qtd. Existente (Editável) --}}
-<td class="px-6 py-4">
-    <form action="{{ route('insumos.updateQuantidadeExistente', $insumo->id) }}" method="POST" class="inline-form">
-        @csrf
-        @method('PATCH')
-        <input 
-            type="number" 
-            name="quantidade_existente" 
-            value="{{ $insumo->pivot->quantidade_existente }}" 
-            class="w-16 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onblur="this.form.submit()"
-            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); this.blur(); }"
-        />
-    </form>
-</td>
+                                            {{-- Botão de + --}}
+                                            <form method="POST" action="{{ route('insumos.alterar.quantidade', $insumo) }}">
+                                                @csrf
+                                                <input type="hidden" name="acao" value="entrada">
+                                                <x-button class="bg-green-500 text-white w-6 h-6 rounded-full hover:bg-green-600 text-xs font-bold leading-none flex items-center justify-center">+</x-button>
+                                                </form>
+                                        </div>
+                                    </td>
 
+                                    <td class="px-6 py-4">{{ $insumo->unidade_medida }}</td>
 
-        {{-- Comprar? --}}
-        <td class="px-6 py-4 font-semibold {{ $insumo->necessario_comprar > 0 ? 'text-red-600' : 'text-green-600' }}">
-            {{ $insumo->necessario_comprar }}
-        </td>
-
-    </tr>
-@endforeach
-
+                                    {{-- Comprar? --}}
+                                    <td class="px-6 py-4 font-semibold {{ $insumo->necessario_comprar > 0 ? 'text-red-600' : 'text-green-600' }}">
+                                        {{ $insumo->necessario_comprar }}
+                                    </td>
+                                </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>

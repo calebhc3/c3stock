@@ -64,43 +64,12 @@ class InsumoController extends Controller
     
         return view('insumos.index', compact('insumos'));
     }
-    
-    public function updateQuantidadeMinima(Request $request, Insumo $insumo)
+
+    public function alterarQuantidade(Request $request, Insumo $insumo)
     {
-        $request->validate(['quantidade_minima' => 'required|numeric|min:0']);
-    
-        $team = auth()->user()->currentTeam;
-    
-        $pivot = $insumo->estoques()->where('team_id', $team->id)->first()?->pivot;
-    
-        if (!$pivot) {
-            return back()->with('error', 'Insumo não está vinculado ao time atual.');
-        }
-    
-        $quantidadeAnterior = $pivot->quantidade_minima;
-    
-        $insumo->estoques()->updateExistingPivot($team->id, [
-            'quantidade_minima' => $request->quantidade_minima,
+        $request->validate([
+            'acao' => 'required|in:entrada,saida',
         ]);
-    
-        // Sem necessidade de $insumo->save(), pois estamos mexendo na pivot
-    
-        if ($quantidadeAnterior !== floatval($request->quantidade_minima)) {
-            LogMovimentacao::create([
-                'user_id' => auth()->id(),
-                'insumo_id' => $insumo->id,
-                'tipo_acao' => 'edicao',
-                'quantidade' => abs($request->quantidade_minima - $quantidadeAnterior),
-                'quantidade_final' => $request->quantidade_minima,
-            ]);
-        }
-    
-        return back()->with('success', 'Quantidade mínima atualizada com sucesso.');
-    }
-    
-    public function updateQuantidadeExistente(Request $request, Insumo $insumo)
-    {
-        $request->validate(['quantidade_existente' => 'required|numeric|min:0']);
     
         $team = auth()->user()->currentTeam;
     
@@ -111,23 +80,27 @@ class InsumoController extends Controller
         }
     
         $quantidadeAnterior = $pivot->quantidade_existente;
+        $quantidadeAlterada = $request->acao === 'entrada' ? 1 : -1;
+    
+        $novaQuantidade = max(0, $quantidadeAnterior + $quantidadeAlterada);
     
         $insumo->estoques()->updateExistingPivot($team->id, [
-            'quantidade_existente' => $request->quantidade_existente,
+            'quantidade_existente' => $novaQuantidade,
         ]);
     
-        if ($quantidadeAnterior !== floatval($request->quantidade_existente)) {
-            LogMovimentacao::create([
-                'user_id' => auth()->id(),
-                'insumo_id' => $insumo->id,
-                'tipo_acao' => $request->quantidade_existente > $quantidadeAnterior ? 'entrada' : 'edicao',
-                'quantidade' => abs($request->quantidade_existente - $quantidadeAnterior),
-                'quantidade_final' => $request->quantidade_existente,
-            ]);
-        }
+        LogMovimentacao::create([
+            'user_id' => auth()->id(),
+            'insumo_id' => $insumo->id,
+            'tipo_acao' => $request->acao,
+            'quantidade' => abs($quantidadeAlterada),
+            'quantidade_final' => $novaQuantidade,
+        ]);
     
-        return back()->with('success', 'Quantidade existente atualizada com sucesso.');
+
+        return redirect()->back()->with('success', 'Quantidade atualizada com sucesso!');
+
     }
+    
     
     public function removerEstoque(Request $request, $id)
     {

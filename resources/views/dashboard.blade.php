@@ -92,6 +92,8 @@
 
             {{-- Gráficos --}}
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
 <script>
     const ctx = document.getElementById('quantidadePorInsumo').getContext('2d');
     const chart = new Chart(ctx, {
@@ -125,14 +127,26 @@
         }
     },
     plugins: {
-        legend: {
-            position: 'top',
+    legend: {
+        position: 'top',
+    },
+    title: {
+        display: false,
+    },
+    datalabels: {
+        anchor: 'end',
+        align: 'right',
+        color: '#111',
+        font: {
+            weight: 'bold',
         },
-        title: {
-            display: false,
-        }
+        formatter: Math.round // mostra número inteiro
     }
 }
+
+},
+plugins: [ChartDataLabels] // <- Aqui ativa o plugin!
+
     });
 </script>
 
