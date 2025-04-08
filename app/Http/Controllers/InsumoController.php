@@ -30,8 +30,27 @@ class InsumoController extends Controller
     
         $ultimaAtualizacao = LogMovimentacao::latest()->first()?->created_at?->format('d/m/Y H:i') ?? '—';
     
-        return view('dashboard', compact('totalInsumos', 'itensCriticos', 'ultimaAtualizacao'));
+        $logMovimentacoes = LogMovimentacao::with(['user', 'insumo'])
+            ->latest()
+            ->take(10)
+            ->get();
+    
+        // Dados para o gráfico
+        $nomes = $insumos->pluck('nome');
+        $quantidadesMinimas = $insumos->pluck('pivot.quantidade_minima');
+        $quantidadesExistentes = $insumos->pluck('pivot.quantidade_existente');
+    
+        return view('dashboard', compact(
+            'totalInsumos',
+            'itensCriticos',
+            'ultimaAtualizacao',
+            'logMovimentacoes',
+            'nomes',
+            'quantidadesMinimas',
+            'quantidadesExistentes'
+        ));
     }
+    
     
     public function index()
     {
@@ -101,7 +120,7 @@ class InsumoController extends Controller
             LogMovimentacao::create([
                 'user_id' => auth()->id(),
                 'insumo_id' => $insumo->id,
-                'tipo_acao' => $request->quantidade_existente > $quantidadeAnterior ? 'entrada' : 'ajuste',
+                'tipo_acao' => $request->quantidade_existente > $quantidadeAnterior ? 'entrada' : 'edicao',
                 'quantidade' => abs($request->quantidade_existente - $quantidadeAnterior),
                 'quantidade_final' => $request->quantidade_existente,
             ]);
