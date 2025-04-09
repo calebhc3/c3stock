@@ -6,9 +6,12 @@ use App\Exports\PedidoInsumosExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
+Route::match(['get', 'post'], 'register', function () {
+    abort(404);
+});
 // Grupo de rotas autenticadas
 Route::middleware([
     'auth:sanctum',
