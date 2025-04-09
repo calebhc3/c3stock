@@ -24,9 +24,10 @@
                             <tr>
                                 <th class="px-6 py-4 text-left">Nome</th>
                                 <th class="px-6 py-4 text-left">Qtd. Mínima</th>
+                                <th class="px-6 py-4 text-left">Qtd. Indicada</th>
                                 <th class="px-6 py-4 text-left">Qtd. Existente</th>
                                 <th class="px-6 py-4 text-left">Unidade</th>
-                                <th class="px-6 py-4 text-left">Comprar?</th>
+                                <th class="px-6 py-4 text-left">Faltantes</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -34,6 +35,7 @@
                                 <tr class="{{ $loop->even ? 'bg-gray-50' : 'bg-white' }} hover:bg-blue-50 transition">
                                     <td class="px-6 py-4">{{ $insumo->nome }}</td>
                                     <td class="px-6 py-4">{{ $insumo->pivot->quantidade_minima }}</td>
+                                    <td class="px-6 py-4">{{ ceil($insumo->pivot->quantidade_minima * 1.5) }}</td>
 
                                     {{-- Qtd. Existente com botões --}}
                                     <td class="px-6 py-4">

@@ -31,12 +31,12 @@ class InsumoController extends Controller
         $ultimaAtualizacao = LogMovimentacao::latest()->first()?->created_at?->format('d/m/Y H:i') ?? '—';
     
         $teamId = auth()->user()->current_team_id;
-
+        
         $logMovimentacoes = LogMovimentacao::with(['user', 'insumo'])
-            ->where('team_id', $teamId)
-            ->latest()
-            ->take(10)
-            ->get();        
+        ->where('team_id', $teamId)
+        ->latest()
+        ->paginate(10); // aqui é paginação real
+      
     
         // Dados para o gráfico
         $nomes = $insumos->pluck('nome');
