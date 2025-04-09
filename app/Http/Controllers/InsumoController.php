@@ -174,7 +174,7 @@ public function sendPedido(Request $request)
     $export = new PedidoInsumosExport($insumosSelecionados, $usuario->name, $equipe, $pedido_id);
     $excel = Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
 
-    Mail::to('financeiro@c3saudeocupacional.com')->send(
+    Mail::to('financeiro@c3saude.com.br')->send(
         (new PedidoInsumos($insumosSelecionados, $pedido_id, $usuario->name, $equipe))
             ->attachData($excel, "pedido_{$pedido_id}.xlsx", [
                 'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
