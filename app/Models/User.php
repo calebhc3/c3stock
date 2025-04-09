@@ -67,4 +67,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function isTeamAdmin()
+{
+    return $this->teamRole($this->currentTeam)?->key === 'admin';
+}
+    public function isTeamMember()
+{
+    return $this->teamRole($this->currentTeam)?->key === 'editor';
+}
 }

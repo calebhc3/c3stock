@@ -15,11 +15,15 @@
             $hoje = now();
             $dia = $hoje->day;
             $podePedir = in_array($dia, [1, 15]);
+            $ehAdmin = auth()->user()->isTeamAdmin(); // usando o método que criamos
         @endphp
 
         @if(!$podePedir)
             <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded text-sm text-center mb-4">
-                ⚠️ Os pedidos só podem ser feitos nos dias <strong>1</strong> e <strong>15</strong> de cada mês. Hoje é dia {{ $dia }}.
+                ⚠️ Os pedidos só podem ser feitos nos dias <strong>1</strong> e <strong>15</strong> de cada mês. Hoje é dia <strong>{{ $dia }}</strong>.<br>
+                @if(!$ehAdmin)
+                🚫 Apenas administradores podem fazer pedidos.
+                @endif
             </div>
         @endif
             <h3 class="text-md font-semibold text-gray-700 text-center mb-4">🛒 Pedido de Insumos</h3>
@@ -51,7 +55,7 @@
                 </x-button>
             @else
                 <button type="button" disabled class="w-full px-3 mt-10 py-1 bg-gray-300 text-gray-500 text-sm rounded-md cursor-not-allowed">
-                    🚫 Pedido indisponível hoje
+                    🚫 Pedido indisponível
                 </button>
             @endif
 
