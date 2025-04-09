@@ -10,12 +10,14 @@ class InsumoSeeder extends Seeder
 {
     public function run()
     {
-        $team = Team::first();
+        $teams = Team::all();
+        $insumos = \App\Models\Insumo::all();
 
-        if (!$team) {
-            $this->command->error('Nenhuma equipe encontrada. Crie uma team antes de rodar o seeder de insumos.');
+        if ($teams->isEmpty() || $insumos->isEmpty()) {
+            $this->command->error('Certifique-se de que os times e os insumos existem antes de rodar este seeder.');
             return;
         }
+        
         $itens = [
             // Insumos
             ['nome' => 'Algodão bolinha', 'tipo' => 'Insumo', 'unidade_medida' => 'pacote', 'quantidade_minima' => 10],

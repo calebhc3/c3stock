@@ -30,7 +30,10 @@ class InsumoController extends Controller
     
         $ultimaAtualizacao = LogMovimentacao::latest()->first()?->created_at?->format('d/m/Y H:i') ?? '—';
     
+        $teamInsumos = auth()->user()->currentTeam->insumos()->pluck('insumos.id');
+
         $logMovimentacoes = LogMovimentacao::with(['user', 'insumo'])
+            ->whereIn('insumo_id', $teamInsumos)
             ->latest()
             ->take(10)
             ->get();

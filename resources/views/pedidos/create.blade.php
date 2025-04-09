@@ -14,7 +14,7 @@
         @php
             $hoje = now();
             $dia = $hoje->day;
-            $podePedir = in_array($dia, [1, 8, 15]);
+            $podePedir = in_array($dia, [1, 15]);
         @endphp
 
         @if(!$podePedir)
