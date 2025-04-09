@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::table('teams', function (Blueprint $table) {
             $table->string('cnpj')->nullable();
             $table->string('nome_unidade')->nullable();
-            $table->string('endereco_unidade')->nullable();
-            $table->string('bairro_unidade')->nullable();
-            $table->string('cidade_unidade')->nullable();
-            $table->string('estado_unidade')->nullable();
-            $table->string('cep_unidade')->nullable();
+            $table->string('razao_social')->nullable();
+            $table->string('cidade')->nullable();
+            $table->string('estado')->nullable();
+            $table->string('cep')->nullable();
         });
     }
     
@@ -28,11 +27,10 @@ return new class extends Migration
             $table->dropColumn([
                 'cnpj',
                 'nome_unidade',
-                'endereco_unidade',
-                'bairro_unidade',
-                'cidade_unidade',
-                'estado_unidade',
-                'cep_unidade',
+                'razao_social',
+                'cidade',
+                'estado',
+                'cep',
             ]);
         });
     }

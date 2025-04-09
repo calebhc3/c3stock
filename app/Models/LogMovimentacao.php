@@ -13,7 +13,8 @@ class LogMovimentacao extends Model
 
     protected $table = 'log_movimentacoes';
 
-    protected $fillable = ['user_id', 'insumo_id', 'tipo_acao', 'quantidade', 'quantidade_final'];
+    protected $fillable = ['user_id', 'insumo_id', 'tipo_acao', 'quantidade', 'quantidade_final', 'team_id',
+];
 
     public function user()
     {

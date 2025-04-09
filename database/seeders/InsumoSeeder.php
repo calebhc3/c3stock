@@ -13,10 +13,10 @@ class InsumoSeeder extends Seeder
         $teams = Team::all();
         $insumos = \App\Models\Insumo::all();
 
-        if ($teams->isEmpty() || $insumos->isEmpty()) {
-            $this->command->error('Certifique-se de que os times e os insumos existem antes de rodar este seeder.');
+        if ($teams->isEmpty()) {
+            $this->command->error('Certifique-se de que os times existem antes de rodar este seeder.');
             return;
-        }
+        }        
         
         $itens = [
             // Insumos
@@ -85,16 +85,18 @@ class InsumoSeeder extends Seeder
                     'unidade_medida' => $item['unidade_medida']
                 ]
             );
-
-            // Associa à equipe com valores na tabela pivot
-            $insumo->estoques()->syncWithoutDetaching([
-                $team->id => [
-                    'quantidade_minima' => $item['quantidade_minima'],
-                    'quantidade_existente' => 0 // aqui agora!
-                ]
-            ]);
-
-            $this->command->info("Insumo '{$item['nome']}' processado e vinculado ao time com quantidade mínima e existente na pivot.");
+        
+            foreach ($teams as $team) {
+                $insumo->estoques()->syncWithoutDetaching([
+                    $team->id => [
+                        'quantidade_minima' => $item['quantidade_minima'],
+                        'quantidade_existente' => 0
+                    ]
+                ]);
+            }
+        
+            $this->command->info("Insumo '{$item['nome']}' vinculado a todos os times com quantidades definidas.");
         }
+        $this->command->info('Todos os insumos foram vinculados a todos os times com quantidades definidas.');        
     }
 }

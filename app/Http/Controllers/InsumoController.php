@@ -30,13 +30,13 @@ class InsumoController extends Controller
     
         $ultimaAtualizacao = LogMovimentacao::latest()->first()?->created_at?->format('d/m/Y H:i') ?? '—';
     
-        $teamInsumos = auth()->user()->currentTeam->insumos()->pluck('insumos.id');
+        $teamId = auth()->user()->current_team_id;
 
         $logMovimentacoes = LogMovimentacao::with(['user', 'insumo'])
-            ->whereIn('insumo_id', $teamInsumos)
+            ->where('team_id', $teamId)
             ->latest()
             ->take(10)
-            ->get();
+            ->get();        
     
         // Dados para o gráfico
         $nomes = $insumos->pluck('nome');
@@ -58,8 +58,12 @@ class InsumoController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $team = $user->currentTeam;
-    
+        $team = auth()->user()->currentTeam;
+
+        if (!$team) {
+            return redirect()->route('dashboard')->with('error', 'Você não está vinculado a nenhuma unidade.');
+        }
+
         $insumos = $team->insumos()
             ->withPivot(['quantidade_minima', 'quantidade_existente'])
             ->orderBy('nome')
@@ -90,10 +94,11 @@ class InsumoController extends Controller
         $insumo->estoques()->updateExistingPivot($team->id, [
             'quantidade_existente' => $novaQuantidade,
         ]);
-    
+
         LogMovimentacao::create([
             'user_id' => auth()->id(),
             'insumo_id' => $insumo->id,
+            'team_id' => auth()->user()->currentTeam->id,
             'tipo_acao' => $request->acao,
             'quantidade' => abs($quantidadeAlterada),
             'quantidade_final' => $novaQuantidade,
@@ -180,15 +185,14 @@ public function sendPedido(Request $request)
 }
     public function historicoMovimentacao()
     {
-        $logs = LogMovimentacao::with('user', 'insumo')
-            ->whereHas('insumo', function ($query) {
-                $query->where('team_id', auth()->user()->currentTeam->id);
-            })
+        $logs = LogMovimentacao::with('user', 'insumo', 'team')
+            ->where('team_id', auth()->user()->current_team_id)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return view('insumos.historico', compact('logs'));
     }
+
         
 
     public function create()
