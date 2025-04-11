@@ -49,10 +49,10 @@
                 </button>
 
                 <!-- Botão de Enviar Pedido -->
-                @if($podePedir)
-                <x-button type="submit" class="w-full px-3 mt-10 py-1 text-white bg-green-600 text-sm rounded-md hover:bg-green-700 transition">
+                @if(!$podePedir)
+                <button type="submit" class="w-full px-3 mt-10 py-1 text-white bg-c3turquoise text-sm rounded-md hover:bg-c3turquoise transition">
                     📬 Enviar Pedido
-                </x-button>
+                </button>
             @else
                 <button type="button" disabled class="w-full px-3 mt-10 py-1 bg-gray-300 text-gray-500 text-sm rounded-md cursor-not-allowed">
                     🚫 Pedido indisponível

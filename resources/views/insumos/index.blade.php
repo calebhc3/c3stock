@@ -20,7 +20,7 @@
             <div class="bg-white shadow rounded-xl overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-gray-700">
-                        <thead class="bg-gray-200 text-gray-800 uppercase text-xs font-bold tracking-wider border-b">
+                        <thead class="bg-c3green text-gray-800 uppercase text-xs font-bold tracking-wider border-b">
                             <tr>
                                 <th class="px-6 py-4 text-left">Nome</th>
                                 <th class="px-6 py-4 text-left">Qtd. Mínima</th>
@@ -44,7 +44,7 @@
                                             <form method="POST" action="{{ route('insumos.alterar.quantidade', $insumo) }}">
                                                 @csrf
                                                 <input type="hidden" name="acao" value="saida">
-                                                <x-button class="bg-red-500 text-white w-6 h-6 rounded-full hover:bg-red-600 text-xs font-bold leading-none flex items-center justify-center">−</x-button>
+                                                <button class="bg-red-500 text-white w-6 h-6 rounded-full hover:bg-red-600 text-xs font-bold leading-none flex items-center justify-center">−</button>
                                                 </form>
 
                                             <span class="w-8 text-center font-semibold text-gray-800">
@@ -55,7 +55,7 @@
                                             <form method="POST" action="{{ route('insumos.alterar.quantidade', $insumo) }}">
                                                 @csrf
                                                 <input type="hidden" name="acao" value="entrada">
-                                                <x-button class="bg-green-500 text-white w-6 h-6 rounded-full hover:bg-green-600 text-xs font-bold leading-none flex items-center justify-center">+</x-button>
+                                                <button class="bg-c3turquoise text-white w-6 h-6 rounded-full hover:bg-green-600 text-xs font-bold leading-none flex items-center justify-center">+</button>
                                                 </form>
                                         </div>
                                     </td>
