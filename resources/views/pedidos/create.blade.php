@@ -49,7 +49,7 @@
                 </button>
 
                 <!-- Botão de Enviar Pedido -->
-                @if(!$podePedir)
+                @if($podePedir)
                 <button type="submit" class="w-full px-3 mt-10 py-1 text-white bg-c3turquoise text-sm rounded-md hover:bg-c3turquoise transition">
                     📬 Enviar Pedido
                 </button>

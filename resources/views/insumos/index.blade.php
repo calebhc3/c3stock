@@ -35,7 +35,7 @@
                                 <tr class="{{ $loop->even ? 'bg-gray-50' : 'bg-white' }} hover:bg-blue-50 transition">
                                     <td class="px-6 py-4">{{ $insumo->nome }}</td>
                                     <td class="px-6 py-4">{{ $insumo->pivot->quantidade_minima }}</td>
-                                    <td class="px-6 py-4">{{ ceil($insumo->pivot->quantidade_minima * 1.5) }}</td>
+                                    <td class="px-6 py-4">{{ ceil($insumo->pivot->quantidade_minima * 1.2) }}</td>
 
                                     {{-- Qtd. Existente com botões --}}
                                     <td class="px-6 py-4">
