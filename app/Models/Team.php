@@ -19,18 +19,10 @@ class Team extends JetstreamTeam
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
         'name',
         'personal_team',
-        'cnpj',
-        'nome_unidade',
-        'endereco_unidade',
-        'bairro_unidade',
-        'cidade_unidade',
-        'estado_unidade',
-        'cep_unidade',
     ];
-    
+
     /**
      * The event map for the model.
      *
@@ -53,11 +45,11 @@ class Team extends JetstreamTeam
             'personal_team' => 'boolean',
         ];
     }
+
     public function insumos()
     {
         return $this->belongsToMany(Insumo::class, 'insumo_team')
-            ->withPivot('quantidade_existente', 'quantidade_minima')
+            ->withPivot('quantidade_existente', 'quantidade_minima', 'unidades_por_pacote')
             ->withTimestamps();
     }
-
 }

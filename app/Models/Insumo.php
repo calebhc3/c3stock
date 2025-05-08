@@ -26,12 +26,12 @@ class Insumo extends Model
         $pivot = $this->pivot;
         if (!$pivot) return 0;
     
-        return max(0, $pivot->quantidade_minima - $pivot->quantidade_existente);
+        return round(max(0, $pivot->quantidade_minima*1.2 - $pivot->quantidade_existente));
     }
     public function estoques()
     {
         return $this->belongsToMany(Team::class, 'insumo_team')
-            ->withPivot('quantidade_existente', 'quantidade_minima')
+            ->withPivot('quantidade_existente', 'quantidade_minima', 'unidades_por_pacote')
             ->withTimestamps();
     }
     public function team()

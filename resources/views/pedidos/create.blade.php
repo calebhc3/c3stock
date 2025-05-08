@@ -14,18 +14,19 @@
         @php
             $hoje = now();
             $dia = $hoje->day;
-            $podePedir = in_array($dia, [1, 15]);
+            $mes = $hoje->month;
+            $ano = $hoje->year;
+
+            $podePedir = in_array($dia, [1, 15]) || ($dia === 28 && $mes === 4 && $ano === 2025);
             $ehAdmin = auth()->user()->isTeamAdmin(); // usando o método que criamos
         @endphp
 
-        @if(!$podePedir)
-            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded text-sm text-center mb-4">
-                ⚠️ Os pedidos só podem ser feitos nos dias <strong>1</strong> e <strong>15</strong> de cada mês. Hoje é dia <strong>{{ $dia }}</strong>.<br>
-                @if(!$ehAdmin)
-                🚫 Apenas administradores podem fazer pedidos.
-                @endif
-            </div>
-        @endif
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded text-sm text-center mb-4">
+        ⚠️ Os pedidos só podem ser realizados nos dias <strong>1</strong> e <strong>15</strong> de cada mês. Hoje é dia <strong>{{ $dia }}</strong>.<br>
+
+        🕒 O prazo para recebimento dos insumos é de até <strong>20</strong> dias.
+    </div>
+
             <h3 class="text-md font-semibold text-gray-700 text-center mb-4">🛒 Pedido de Insumos</h3>
 
             <form method="POST" action="{{ route('pedidos.send') }}" class="space-y-3">
@@ -60,6 +61,41 @@
             @endif
 
             </form>
+            <div class="mt-10 text-sm text-gray-500">
+                <p>📅 Data do último pedido: {{ $hoje->format('d/m/Y') }}</p>
+                <p>🕒 Prazo de entrega: até 20 dias úteis.</p>
+    <h3 class="text-md font-semibold text-gray-700 text-center mb-4 mt-4">📂 Histórico de Pedidos</h3>
+
+    @if($historicoPedidos->count())
+        <div class="overflow-x-auto">
+            <table class="min-w-full w-full bg-white text-sm border rounded shadow-sm">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-700">
+                        <th class="p-2 border-b">#</th>
+                        <th class="p-2 border-b">Data</th>
+                        <th class="p-2 border-b">Arquivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($historicoPedidos as $index => $pedido)
+                        <tr class="text-center hover:bg-gray-50">
+                            <td class="p-2 border-b">{{ $index + 1 }}</td>
+                            <td class="p-2 border-b">{{ $pedido->created_at->format('d/m/Y H:i') }}</td>
+                            <td class="p-2 border-b">
+                                <a href="{{ asset('storage/' . $pedido->file_path) }}" class="text-blue-500 underline" target="_blank">
+                                    📄 Baixar Excel
+                                </a>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <p class="text-center text-gray-500 text-sm">Nenhum pedido realizado ainda.</p>
+    @endif
+</div>
+
         </div>
     </div>
 

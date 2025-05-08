@@ -11,16 +11,27 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\LogMovimentacao;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Pedido;
 use App\Exports\PedidoInsumosExport;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class InsumoController extends Controller
 {
 
     public function dashboard()
     {
-        $team = auth()->user()->currentTeam;
+        $user = auth()->user();
     
-        $insumos = $team->insumos()->withPivot(['quantidade_minima', 'quantidade_existente'])->get();
+        if (!$user || !$user->currentTeam) {
+            abort(403, 'Você não está associado a nenhuma equipe.');
+        }
+    
+        $team = $user->currentTeam;
+    
+        $insumos = $team->insumos()
+            ->withPivot(['quantidade_minima', 'quantidade_existente'])
+            ->get();
     
         $totalInsumos = $insumos->count();
     
@@ -30,13 +41,10 @@ class InsumoController extends Controller
     
         $ultimaAtualizacao = LogMovimentacao::latest()->first()?->created_at?->format('d/m/Y H:i') ?? '—';
     
-        $teamId = auth()->user()->current_team_id;
-        
         $logMovimentacoes = LogMovimentacao::with(['user', 'insumo'])
-        ->where('team_id', $teamId)
-        ->latest()
-        ->paginate(10); // aqui é paginação real
-      
+            ->where('team_id', $team->id)
+            ->latest()
+            ->paginate(10);
     
         // Dados para o gráfico
         $nomes = $insumos->pluck('nome');
@@ -50,10 +58,48 @@ class InsumoController extends Controller
             'logMovimentacoes',
             'nomes',
             'quantidadesMinimas',
-            'quantidadesExistentes'
+            'quantidadesExistentes',
+            'insumos'
         ));
     }
+    public function dashboardAdmin()
+{
+    $user = auth()->user();
+
+    if ($user->email !== 'owner@c3stock.com') {
+        abort(403, 'Acesso negado.');
+    }
+
+    // Buscar todos os times com seus insumos e dados da pivot
+    $teams = Team::with(['insumos' => function ($query) {
+        $query->withPivot(['quantidade_minima', 'quantidade_existente']);
+    }])->get();
+
+    return view('dashboard-admin', compact('teams'));
+}
+
+    public function editarEstoque()
+    {
+        $team = auth()->user()->currentTeam;
+        $insumos = $team->insumos()->withPivot(['quantidade_existente', 'quantidade_minima'])->get();
+        
+        return view('insumos.editar-estoque', compact('insumos'));
+    }
     
+    public function atualizarEstoqueEmLote(Request $request)
+    {
+        $team = auth()->user()->currentTeam;
+        
+        foreach ($request->estoque as $insumoId => $quantidade) {
+            $team->insumos()->updateExistingPivot($insumoId, [
+                'quantidade_existente' => $quantidade
+            ]);
+            
+            // Registrar no log se necessário
+        }
+        
+        return redirect()->route('dashboard')->with('success', 'Estoque atualizado com sucesso!');
+    }
     
     public function index()
     {
@@ -65,12 +111,13 @@ class InsumoController extends Controller
         }
 
         $insumos = $team->insumos()
-            ->withPivot(['quantidade_minima', 'quantidade_existente'])
+            ->withPivot(['quantidade_minima', 'quantidade_existente', 'unidades_por_pacote'])
             ->orderBy('nome')
             ->get();
     
         return view('insumos.index', compact('insumos'));
     }
+
 
     public function alterarQuantidade(Request $request, Insumo $insumo)
     {
@@ -147,41 +194,114 @@ class InsumoController extends Controller
     public function createPedido()
 {
     $insumos = auth()->user()->currentTeam->insumos;
-    return view('pedidos.create', compact('insumos'));
+    $historicoPedidos = Pedido::where('team_id', auth()->user()->currentTeam->id)
+    ->latest()
+    ->get();
+    return view('pedidos.create', compact(
+        'insumos',
+        'historicoPedidos'
+    ));
 }
 
 public function sendPedido(Request $request)
 {
-    $data = $request->validate([
-        'items' => 'required|array',
+    $validated = $request->validate([
+        'items' => 'required|array|min:1',
         'items.*.insumo_id' => 'required|exists:insumos,id',
-        'items.*.quantidade' => 'required|numeric|min:1',
+        'items.*.quantidade' => 'required|numeric|min:0.1',
     ]);
 
-    $pedido_id = rand(1000, 9999);
-    $usuario = Auth::user();
-    $equipe = $usuario->currentTeam ? $usuario->currentTeam->name : 'Sem equipe';
+    DB::beginTransaction();
 
-    $insumosSelecionados = collect($data['items'])->map(function ($item) {
-        $insumo = \App\Models\Insumo::find($item['insumo_id']);
-        return [
-            'nome' => $insumo->nome,
-            'quantidade' => $item['quantidade'],
-        ];
-    })->toArray();
+    try {
+        $usuario = Auth::user();
+        
+        if (!$usuario->currentTeam) {
+            throw new \Exception('Usuário não está associado a nenhuma equipe.');
+        }
 
-    // Aqui passa os parâmetros novos
-    $export = new PedidoInsumosExport($insumosSelecionados, $usuario->name, $equipe, $pedido_id);
-    $excel = Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
+        // Sanitiza os dados para UTF-8
+        $nomeUsuario = mb_convert_encoding($usuario->name, 'UTF-8', 'UTF-8');
+        $nomeEquipe = mb_convert_encoding($usuario->currentTeam->name, 'UTF-8', 'UTF-8');
 
-    Mail::to('financeiro@c3saude.com.br')->send(
-        (new PedidoInsumos($insumosSelecionados, $pedido_id, $usuario->name, $equipe))
-            ->attachData($excel, "pedido_{$pedido_id}.xlsx", [
-                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            ])
-    );
+        // Obtém os insumos em uma única consulta
+        $insumosIds = collect($validated['items'])->pluck('insumo_id')->unique();
+        $insumos = Insumo::whereIn('id', $insumosIds)->get()->keyBy('id');
 
-    return redirect()->back()->with('success', 'Pedido enviado com sucesso! 📩 Excel anexado!');
+        // Processa os itens com sanitização UTF-8
+        $insumosSelecionados = collect($validated['items'])->map(function ($item) use ($insumos) {
+            $insumo = $insumos[$item['insumo_id'] ?? null];
+            
+            if (!$insumo) {
+                throw new \Exception("Insumo ID {$item['insumo_id']} não encontrado.");
+            }
+
+            return [
+                'nome' => mb_convert_encoding($insumo->nome, 'UTF-8', 'UTF-8'),
+                'quantidade' => $item['quantidade'],
+                'unidade_medida' => mb_convert_encoding($insumo->unidade_medida ?? 'un', 'UTF-8', 'UTF-8'),
+            ];
+        })->toArray();
+
+        // Cria o registro no banco com file_path temporário
+        $pedido = Pedido::create([
+            'team_id' => $usuario->currentTeam->id,
+            'user_id' => $usuario->id,
+            'status' => 'pendente',
+            'file_path' => 'temp', // Valor temporário
+        ]);
+
+        // Gera o nome do arquivo com o ID
+        $fileName = "pedidos/pedido_{$pedido->id}_" . now()->format('YmdHis') . ".xlsx";
+        
+        // Cria e salva o Excel
+        $export = new PedidoInsumosExport(
+            $insumosSelecionados, 
+            $nomeUsuario, 
+            $nomeEquipe,
+            $pedido->id
+        );
+
+        $fileContent = Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
+        
+        if (!Storage::disk('public')->put($fileName, $fileContent)) {
+            throw new \Exception('Falha ao salvar o arquivo do pedido.');
+        }
+
+        // Atualiza com o caminho real do arquivo
+        $pedido->update(['file_path' => $fileName]);
+
+        // Envia o e-mail (versão síncrona para testes)
+        Mail::to('administrativo@c3saude.com.br')
+            ->cc(['matheus.martins@c3saude.com.br', 'lais.costa@c3saude.com.br'])
+            ->send(
+                (new PedidoInsumos(
+                    $insumosSelecionados,
+                    $pedido->id,
+                    $nomeUsuario,
+                    $nomeEquipe
+                ))->attachData(
+                    $fileContent,
+                    "pedido_insumos_{$pedido->id}.xlsx",
+                    ['mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+                )
+            );
+
+        DB::commit();
+
+        return redirect()->back()
+               ->with('success', 'Pedido enviado com sucesso! 📩 Excel salvo e anexado!');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Erro ao enviar pedido: ' . $e->getMessage(), [
+            'user_id' => Auth::id(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return redirect()->back()
+               ->with('error', 'Erro ao processar pedido: ' . $e->getMessage());
+    }
 }
     public function historicoMovimentacao()
     {
@@ -191,14 +311,7 @@ public function sendPedido(Request $request)
             ->paginate(10);
 
         return view('insumos.historico', compact('logs'));
-    }
-
-        
-
-    public function create()
-    {
-        return view('insumos.create');
-    }
+    }      
 
     public function store(Request $request)
     {
@@ -231,4 +344,5 @@ public function sendPedido(Request $request)
 
         return redirect()->route('insumos.index')->with('success', 'Insumo criado com sucesso!');
     }
+
 }

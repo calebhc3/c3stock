@@ -31,9 +31,9 @@
                     <p class="text-sm text-gray-500">Gerencie os insumos da unidade com agilidade.</p>
                 </div>
                 <div>
-                    <a href="{{ route('insumos.create') }}"
+                    <a href="{{ route('insumos.editar-estoque') }}"
                        class="inline-flex items-center px-4 py-2 bg-c3turquoise border border-transparent rounded-xl font-semibold text-sm text-white hover:bg-blue-700 transition">
-                        ➕ Novo Insumo
+                        Editar estoque
                     </a>
                 </div>
             </div>
@@ -84,74 +84,9 @@
 
     </div>
 </div>
-            {{-- Gráficos --}}
-            <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">📊 Gráficos de Estoque</h3>
-                <div class="bg-gray-50 p-4 rounded-lg shadow overflow-y-auto" style="max-height: 600px;">
-                <h4 class="text-md font-semibold text-gray-700 mb-2">Quantidade por Insumo</h4>
-                <div style="min-width: 1000px; width: 100%;">
-                    <canvas id="quantidadePorInsumo" height="{{ $nomes->count() * 30 }}"></canvas>
-                </div>
-            </div>
-
-            {{-- Gráficos --}}
-            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <script>
     const ctx = document.getElementById('quantidadePorInsumo').getContext('2d');
-    const chart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: {!! json_encode($nomes) !!},
-            datasets: [
-                {
-                    label: 'Quantidade Mínima',
-                    data: {!! json_encode($quantidadesMinimas) !!},
-                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    borderWidth: 1,
-                },
-                {
-                    label: 'Quantidade Existente',
-                    data: {!! json_encode($quantidadesExistentes) !!},
-                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1,
-                }
-            ]
-        },
-        options: {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false, // <- ESSENCIAL!
-    scales: {
-        x: {
-            beginAtZero: true,
-        }
-    },
-    plugins: {
-    legend: {
-        position: 'top',
-    },
-    title: {
-        display: false,
-    },
-    datalabels: {
-        anchor: 'end',
-        align: 'right',
-        color: '#111',
-        font: {
-            weight: 'bold',
-        },
-        formatter: Math.round // mostra número inteiro
-    }
-}
-
-},
-plugins: [ChartDataLabels] // <- Aqui ativa o plugin!
-
-    });
 </script>
 
         </div>

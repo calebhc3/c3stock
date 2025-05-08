@@ -1,6 +1,9 @@
-vendor/
-node_modules/
-storage/
+/vendor
+/node_modules
 .env
-docker-compose.override.yml
-dbdata_c3stock/
+/storage/*.key
+/public/storage
+.idea
+*.log
+*.sqlite
+.env.*
