@@ -6,11 +6,18 @@ use App\Exports\PedidoInsumosExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\FaqController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\CustomAuthenticatedSessionController;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
-Route::get('/admin/dashboard', [InsumoController::class, 'dashboardAdmin'])
+
+// Sobrescreve o login padrão do Fortify
+Route::post('/login', [CustomAuthenticatedSessionController::class, 'store'])
+    ->name('login');
+
+Route::get('/admin/dashboard', [DashboardController::class, 'dashboardAdmin'])
     ->middleware(['auth', 'verified'])
     ->name('admin.dashboard');
 
@@ -26,7 +33,7 @@ Route::middleware([
 ])->group(function () {
     
     // Dashboard (já com dados carregados)
-    Route::get('/dashboard', [InsumoController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 
     // CRUD completo de Insumos
 
