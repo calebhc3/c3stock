@@ -4,3 +4,9 @@ storage/
 .env
 docker-compose.override.yml
 dbdata_c3stock/
+docker-compose.yml
+vite.config.js
+nginx/default.conf
+public/build/manifest.json
+storage/logs/laravel.log
+docker-compose.yml
