@@ -4,10 +4,16 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InsumoController;
 use App\Exports\PedidoInsumosExport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\FaqController;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
+Route::get('/admin/dashboard', [InsumoController::class, 'dashboardAdmin'])
+    ->middleware(['auth', 'verified'])
+    ->name('admin.dashboard');
+
 
 Route::match(['get', 'post'], 'register', function () {
     abort(404);
@@ -31,6 +37,10 @@ Route::middleware([
     Route::put('/insumos/{insumo}', [InsumoController::class, 'update'])->name('insumos.update');
     Route::delete('/insumos/{insumo}', [InsumoController::class, 'destroy'])->name('insumos.destroy');
     Route::post('/insumos/{insumo}/alterar-quantidade', [InsumoController::class, 'alterarQuantidade'])->name('insumos.alterar.quantidade');
+    Route::get('/insumos/editar-estoque', [InsumoController::class, 'editarEstoque'])
+    ->name('insumos.editar-estoque');
+    Route::post('/insumos/atualizar-estoque', [InsumoController::class, 'atualizarEstoqueEmLote'])
+    ->name('insumos.atualizar-estoque');
 
     Route::get('/pedidos/create', [InsumoController::class, 'createPedido'])->name('pedidos.create');
     Route::post('/pedidos/send', [InsumoController::class, 'sendPedido'])->name('pedidos.send');
@@ -51,4 +61,7 @@ Route::middleware([
     
         return Excel::download(new PedidoInsumosExport($insumosSelecionados), 'pedido-insumos.xlsx');
     })->name('pedidos.exportar');
+
+    Route::get('/faq', [FaqController::class, 'index'])->name('faq');
+    Route::post('/faq/contact', [ContactController::class, 'submit'])->name('contact.submit');
 });

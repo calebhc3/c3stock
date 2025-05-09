@@ -30,7 +30,6 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'cargo',
         'password',
     ];
 
@@ -67,13 +66,13 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-
+    
     public function isTeamAdmin()
-{
-    return $this->teamRole($this->currentTeam)?->key === 'admin';
-}
-    public function isTeamMember()
-{
-    return $this->teamRole($this->currentTeam)?->key === 'editor';
-}
+    {
+        return $this->teamRole($this->currentTeam)?->key === 'admin';
+    }
+        public function isTeamMember()
+    {
+        return $this->teamRole($this->currentTeam)?->key === 'editor';
+    }
 }
