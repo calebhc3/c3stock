@@ -74,6 +74,7 @@ Route::middleware([
 
     // routes/web.php
     Route::post('/pedidos/{pedido}/confirmar-envio', [DashboardController::class, 'confirmarEnvio'])->name('pedidos.confirmar-envio');
-    Route::post('/pedidos/{pedido}/confirmar-recebimento', [DashboardController::class, 'confirmarRecebimento'])->name('pedidos.confirmarRecebimento');
+Route::post('/pedidos/{pedido}/confirmar-recebimento', [DashboardController::class, 'confirmarRecebimentoAjax'])
+    ->name('pedidos.ajax.confirmarRecebimento');
 
 });

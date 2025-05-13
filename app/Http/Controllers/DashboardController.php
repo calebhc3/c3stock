@@ -6,6 +6,7 @@ use App\Models\LogMovimentacao;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Team; // Se estiver usando Jetstream Teams
 use App\Models\Pedido;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -45,7 +46,7 @@ class DashboardController extends Controller
             ->where('team_id', $team->id)
             ->latest()
             ->paginate(10);
-            
+
         return view('dashboard', compact(
             'totalInsumos',
             'itensCriticos',
@@ -131,13 +132,16 @@ public function confirmarEnvio(Pedido $pedido)
     ]);
     }
 
-    public function confirmarRecebimento(Pedido $pedido)
-    {
-        $pedido->update([
-            'recebido_em' => now(),
-        ]);
+public function confirmarRecebimentoAjax(Request $request, Pedido $pedido)
+{
+    $pedido->recebido_em = now();
+    $pedido->save();
 
-        return redirect()->back()->with('success', 'Recebimento confirmado com sucesso!');
-    }
+    return response()->json([
+        'success' => true,
+        'recebido_em' => $pedido->recebido_em->format('d/m/Y'),
+        'id' => $pedido->id
+    ]);
+}
 
 }

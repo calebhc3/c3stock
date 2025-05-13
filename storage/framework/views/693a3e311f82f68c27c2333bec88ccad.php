@@ -31,41 +31,48 @@
                     <th class="px-4 py-3">Ações</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php $__empty_1 = true; $__currentLoopData = $pedidos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pedido): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                    <?php
-                        $prazoMaximo = $pedido->created_at->addDays(20);
-                        $atrasado = now()->greaterThan($prazoMaximo) && is_null($pedido->recebido_em);
-                    ?>
-                    <tr class="border-b hover:bg-gray-50 <?php echo e($atrasado ? 'bg-red-100' : ''); ?>">
-                        <td class="px-4 py-2"><?php echo e($pedido->created_at->format('d/m/Y')); ?></td>
-                        <td class="px-4 py-2"><?php echo e($prazoMaximo->format('d/m/Y')); ?></td>
-                        <td class="px-4 py-2">
-                            <?php if($pedido->recebido_em): ?>
-                                <span class="text-green-600 font-semibold">Recebido</span>
-                            <?php else: ?>
-                                <span class="text-yellow-600 font-semibold">Pendente</span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="px-4 py-2">
-                            <?php if(is_null($pedido->recebido_em)): ?>
-                                <form action="<?php echo e(route('pedidos.confirmarRecebimento', $pedido->id)); ?>" method="POST">
-                                    <?php echo csrf_field(); ?>
-                                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                        Confirmar Recebimento
-                                    </button>
-                                </form>
-                            <?php else: ?>
-                                <span class="text-gray-500">Confirmado em <?php echo e($pedido->recebido_em->format('d/m/Y')); ?></span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                    <tr>
-                        <td colspan="4" class="px-4 py-4 text-center text-gray-500">Nenhum pedido encontrado.</td>
-                    </tr>
+<tbody>
+    <?php $__empty_1 = true; $__currentLoopData = $pedidos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pedido): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+        <?php
+            $prazoMaximo = $pedido->created_at->addDays(20);
+            $atrasado = now()->greaterThan($prazoMaximo) && is_null($pedido->recebido_em);
+        ?>
+        <tr id="pedido-row-<?php echo e($pedido->id); ?>" class="border-b hover:bg-gray-50 <?php echo e($atrasado ? 'bg-red-100' : ''); ?>">
+            <td class="px-4 py-2"><?php echo e($pedido->created_at->format('d/m/Y')); ?></td>
+            <td class="px-4 py-2"><?php echo e($prazoMaximo->format('d/m/Y')); ?></td>
+            
+            
+            <td class="px-4 py-2" id="status-<?php echo e($pedido->id); ?>">
+                <?php if($pedido->recebido_em): ?>
+                    <span class="text-green-600 font-semibold">Recebido</span>
+                <?php else: ?>
+                    <span class="text-yellow-600 font-semibold">Pendente</span>
                 <?php endif; ?>
-            </tbody>
+            </td>
+
+            
+            <td class="px-4 py-2" id="acao-<?php echo e($pedido->id); ?>">
+                <?php if(is_null($pedido->recebido_em)): ?>
+                    <button type="button"
+                        class="confirmar-btn px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        data-id="<?php echo e($pedido->id); ?>">
+                        Confirmar Recebimento
+                    </button>
+                <?php else: ?>
+                    <span class="text-gray-500">
+    Confirmado em <?php echo e(\Carbon\Carbon::parse($pedido->recebido_em)->format('d/m/Y')); ?>
+
+                    </span>
+                <?php endif; ?>
+            </td>
+        </tr>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+        <tr>
+            <td colspan="4" class="px-4 py-4 text-center text-gray-500">Nenhum pedido encontrado.</td>
+        </tr>
+    <?php endif; ?>
+</tbody>
+
         </table>
     </div>
 </div>
@@ -146,9 +153,6 @@
 
     </div>
 </div>
-
-<script>
-</script>
 
         </div>
     </div>

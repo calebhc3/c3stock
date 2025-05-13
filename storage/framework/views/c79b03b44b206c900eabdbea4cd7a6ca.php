@@ -78,6 +78,43 @@ if (isset($__slots)) unset($__slots);
         <!-- Scripts -->
         <?php echo \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scripts(); ?>
 
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+    $(document).ready(function () {
+        $('.confirmar-btn').click(function () {
+            const button = $(this);
+            const pedidoId = button.data('id');
+
+            $.ajax({
+                url: `/pedidos/${pedidoId}/confirmar-recebimento`,
+                method: 'POST',
+                data: {
+                    _token: '<?php echo e(csrf_token()); ?>'
+                },
+                success: function (response) {
+                    if (response.success) {
+                        // Atualiza a coluna de status
+                        $(`#status-${pedidoId}`).html(
+                            `<span class="text-green-600 font-semibold">Recebido</span>`
+                        );
+
+                        // Substitui botão por texto com data
+                        $(`#acao-${pedidoId}`).html(
+                            `<span class="text-gray-500">Confirmado em ${response.recebido_em}</span>`
+                        );
+
+                        // Remove o fundo vermelho se tinha vencido
+                        $(`#pedido-row-${pedidoId}`).removeClass('bg-red-100');
+                    }
+                },
+                error: function () {
+                    alert('Erro ao confirmar recebimento. Tente novamente.');
+                }
+            });
+        });
+    });
+</script>
         <?php echo app('Illuminate\Foundation\Vite')(['resources/js/app.js']); ?>
     </body>
 </html><?php /**PATH /var/www/resources/views/layouts/app.blade.php ENDPATH**/ ?>
