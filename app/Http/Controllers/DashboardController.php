@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\LogMovimentacao;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Team; // Se estiver usando Jetstream Teams
+use App\Models\Pedido;
 
 class DashboardController extends Controller
 {
@@ -40,6 +41,11 @@ class DashboardController extends Controller
         $quantidadesMinimas = $insumos->pluck('pivot.quantidade_minima');
         $quantidadesExistentes = $insumos->pluck('pivot.quantidade_existente');
     
+        $pedidos = Pedido::with('team', 'user')
+            ->where('team_id', $team->id)
+            ->latest()
+            ->paginate(10);
+            
         return view('dashboard', compact(
             'totalInsumos',
             'itensCriticos',
@@ -48,7 +54,8 @@ class DashboardController extends Controller
             'nomes',
             'quantidadesMinimas',
             'quantidadesExistentes',
-            'insumos'
+            'insumos',
+            'pedidos'
         ));
     }
 
@@ -99,7 +106,38 @@ class DashboardController extends Controller
         $query->withPivot(['quantidade_minima', 'quantidade_existente']);
     }])->get();
 
-    return view('dashboard-admin', compact('teams'));
+    $pedidos = Pedido::with('team', 'user')->latest()->get();
+
+    return view('dashboard-admin', compact('teams', 'pedidos'));
+    }
+
+public function confirmarEnvio(Pedido $pedido)
+{
+    if ($pedido->enviado_em) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Pedido já confirmado.'
+        ]);
+    }
+
+    $pedido->update([
+        'enviado_em' => now(),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pedido confirmado com sucesso.',
+        'timestamp' => now()->format('d/m/Y H:i')
+    ]);
+    }
+
+    public function confirmarRecebimento(Pedido $pedido)
+    {
+        $pedido->update([
+            'recebido_em' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Recebimento confirmado com sucesso!');
     }
 
 }

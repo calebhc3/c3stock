@@ -71,4 +71,9 @@ Route::middleware([
 
     Route::get('/faq', [FaqController::class, 'index'])->name('faq');
     Route::post('/faq/contact', [ContactController::class, 'submit'])->name('contact.submit');
+
+    // routes/web.php
+    Route::post('/pedidos/{pedido}/confirmar-envio', [DashboardController::class, 'confirmarEnvio'])->name('pedidos.confirmar-envio');
+    Route::post('/pedidos/{pedido}/confirmar-recebimento', [DashboardController::class, 'confirmarRecebimento'])->name('pedidos.confirmarRecebimento');
+
 });

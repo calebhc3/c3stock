@@ -79,6 +79,5 @@ if (isset($__slots)) unset($__slots);
         <?php echo \Livewire\Mechanisms\FrontendAssets\FrontendAssets::scripts(); ?>
 
         <?php echo app('Illuminate\Foundation\Vite')(['resources/js/app.js']); ?>
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js" defer></script>
     </body>
 </html><?php /**PATH /var/www/resources/views/layouts/app.blade.php ENDPATH**/ ?>

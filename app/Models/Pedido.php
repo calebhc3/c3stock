@@ -24,4 +24,12 @@ class Pedido extends Model
     {
         return $this->belongsTo(Team::class);
     }
+
+    protected $dates = ['enviado_em'];
+
+    public function isEnviado()
+    {
+        return !is_null($this->enviado_em);
+    }
+    
 }

@@ -41,6 +41,5 @@
         <!-- Scripts -->
         @livewireScripts
         @vite(['resources/js/app.js'])
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js" defer></script>
     </body>
 </html>

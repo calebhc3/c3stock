@@ -9,6 +9,58 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
             {{-- Cards Resumo --}}
+            <div class="bg-white p-6 rounded-xl shadow">
+    <h3 class="text-lg font-semibold text-gray-800 mb-4">📦 Histórico de Pedidos</h3>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-600">
+            <thead class="bg-c3green text-xs uppercase text-gray-700">
+                <tr>
+                    <th class="px-4 py-3">Data do Pedido</th>
+                    <th class="px-4 py-3">Prazo Máximo</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($pedidos as $pedido)
+                    @php
+                        $prazoMaximo = $pedido->created_at->addDays(20);
+                        $atrasado = now()->greaterThan($prazoMaximo) && is_null($pedido->recebido_em);
+                    @endphp
+                    <tr class="border-b hover:bg-gray-50 {{ $atrasado ? 'bg-red-100' : '' }}">
+                        <td class="px-4 py-2">{{ $pedido->created_at->format('d/m/Y') }}</td>
+                        <td class="px-4 py-2">{{ $prazoMaximo->format('d/m/Y') }}</td>
+                        <td class="px-4 py-2">
+                            @if($pedido->recebido_em)
+                                <span class="text-green-600 font-semibold">Recebido</span>
+                            @else
+                                <span class="text-yellow-600 font-semibold">Pendente</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-2">
+                            @if(is_null($pedido->recebido_em))
+                                <form action="{{ route('pedidos.confirmarRecebimento', $pedido->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                        Confirmar Recebimento
+                                    </button>
+                                </form>
+                            @else
+                                <span class="text-gray-500">Confirmado em {{ $pedido->recebido_em->format('d/m/Y') }}</span>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-4 py-4 text-center text-gray-500">Nenhum pedido encontrado.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="bg-c3green p-6 rounded-xl shadow text-center">
                     <div class="text-sm text-gray-500">Insumos Cadastrados</div>
@@ -86,7 +138,6 @@
 </div>
 
 <script>
-    const ctx = document.getElementById('quantidadePorInsumo').getContext('2d');
 </script>
 
         </div>

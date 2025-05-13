@@ -12,22 +12,23 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                @if(auth()->user()->email !== 'owner@c3stock.com')
+
                     <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
                 </div>
-                <!-- Menu personalizado -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                <!-- Menu personalizado -->
                 <x-nav-link :href="route('insumos.index')" :active="request()->routeIs('insumos.*')">
                     Estoque de Insumos
                 </x-nav-link>
                 <x-nav-link :href="route('pedidos.create')" :active="request()->routeIs('pedidos.create')">
                         Fazer Solicitação
-                    </x-nav-link>
+                </x-nav-link>
+                @endif
                 <x-nav-link :href="route('faq')" :active="request()->routeIs('faq')">
                         Perguntas frequentes
-                    </x-nav-link>
+                </x-nav-link>
                 </div>
             </div>
 

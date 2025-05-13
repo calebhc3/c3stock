@@ -18,6 +18,56 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
+            <?php if($pedidos->count() > 0): ?>
+                <div class="bg-white p-6 rounded shadow mb-6">
+                    <?php if(session('success')): ?>
+                        <div id="success-message" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-800 rounded-md text-sm text-center">
+                            ✅ <?php echo e(session('success')); ?>
+
+                        </div>
+                    <?php endif; ?>
+
+                    <h3 class="text-lg font-bold mb-4">📦 Pedidos Pendentes de Envio</h3>
+
+                    <table class="min-w-full divide-y divide-gray-200 text-sm text-gray-700">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Unidade</th>
+                                <th class="px-4 py-2 text-left">Usuário</th>
+                                <th class="px-4 py-2 text-left">Data do Pedido</th>
+                                <th class="px-4 py-2 text-left">Arquivo</th>
+                                <th class="px-4 py-2 text-left">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php $__currentLoopData = $pedidos; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pedido): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <tr id="pedido-<?php echo e($pedido->id); ?>" class="border-b">
+                                    <td class="px-4 py-2"><?php echo e($pedido->team->name); ?></td>
+                                    <td class="px-4 py-2"><?php echo e($pedido->user->name); ?></td>
+                                    <td class="px-4 py-2"><?php echo e($pedido->created_at->format('d/m/Y H:i')); ?></td>
+                                    <td class="px-4 py-2">
+                                        <a href="<?php echo e(Storage::url($pedido->arquivo)); ?>" target="_blank" class="text-blue-500 underline">Ver Arquivo</a>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <div class="status-envio">
+                                            <?php if($pedido->enviado_em): ?>
+                                                ✅ Enviado em <?php echo e($pedido->enviado_em->format('d/m/Y H:i')); ?>
+
+                                            <?php else: ?>
+                                                <button onclick="confirmarEnvio(<?php echo e($pedido->id); ?>)"
+                                                    class="confirmar-btn px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                                    Confirmar Envio
+                                                </button>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+
             <div class="flex justify-between items-center mb-4">
                 <label class="block text-sm font-medium text-gray-700">
                     Filtrar por unidade:
@@ -96,6 +146,30 @@
     </div>
 
     <script>
+        function confirmarEnvio(pedidoId) {
+            if (!confirm("Tem certeza que deseja confirmar o envio deste pedido?")) return;
+
+            fetch(`/pedidos/${pedidoId}/confirmar-envio`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                }
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const row = document.getElementById(`pedido-${pedidoId}`);
+                    row.querySelector('.confirmar-btn').remove();
+                    row.querySelector('.status-envio').textContent = `✅ Enviado em ${data.timestamp}`;
+                } else {
+                    alert(data.message || "Erro ao confirmar envio.");
+                }
+            }).catch(error => {
+                alert("Erro na requisição.");
+                console.error(error);
+            });
+        }
+
         function togglePacote() {
             const usarPacote = document.getElementById('togglePacotes').checked;
             const linhas = document.querySelectorAll('#tabelaInsumos tbody tr');
