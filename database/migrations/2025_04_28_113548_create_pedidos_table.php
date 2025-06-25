@@ -18,6 +18,11 @@ public function up()
         $table->foreignId('team_id')->constrained('teams')->onDelete('cascade');
         $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
         $table->string('file_path');
+        $table->string('status')->default('pendente'); // pendente, aprovado, rejeitado
+        $table->text('observacoes')->nullable(); // Observações adicionais sobre o pedido
+        $table->date('data_entrega')->nullable(); // Data prevista para entrega do pedido
+
+        // Timestamps padrão
         $table->timestamps(); // created_at será a data do pedido
     });
 }

@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('insumos', function (Blueprint $table) {
             $table->id();
             $table->string('nome');
-            $table->enum('tipo', ['insumo', 'medicamento']);
+            $table->string('tipo');
             $table->string('unidade_medida');
             $table->timestamps();
         });

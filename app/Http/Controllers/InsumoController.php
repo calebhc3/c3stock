@@ -7,6 +7,7 @@ use App\Mail\PedidoInsumos;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
 use App\Models\Team; // Se estiver usando Jetstream Teams
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use App\Models\LogMovimentacao;
 use Maatwebsite\Excel\Facades\Excel;
@@ -104,7 +105,7 @@ class InsumoController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $team = auth()->user()->currentTeam;
+        $team = $user->currentTeam;
 
         if (!$team) {
             return redirect()->route('dashboard')->with('error', 'Você não está vinculado a nenhuma unidade.');
@@ -114,8 +115,23 @@ class InsumoController extends Controller
             ->withPivot(['quantidade_minima', 'quantidade_existente', 'unidades_por_pacote'])
             ->orderBy('nome')
             ->get();
-    
-        return view('insumos.index', compact('insumos'));
+
+        $belowMinimumCount = $insumos->filter(function ($insumo) {
+            return $insumo->pivot->quantidade_existente < $insumo->pivot->quantidade_minima;
+        })->count();
+
+        $inStockCount = $insumos->filter(function ($insumo) {
+            return $insumo->pivot->quantidade_existente > 0;
+        })->count();
+
+        $categories = $insumos->pluck('tipo')->unique();
+
+        return view('insumos.index', compact(
+            'insumos',
+            'belowMinimumCount',
+            'inStockCount',
+            'categories'
+        ));
     }
 
 
@@ -189,76 +205,134 @@ class InsumoController extends Controller
     
         return back()->with('success', 'Saída registrada com sucesso.');
     }
-    
-
+        
     public function createPedido()
-{
-    $insumos = auth()->user()->currentTeam->insumos;
-    $historicoPedidos = Pedido::where('team_id', auth()->user()->currentTeam->id)
-    ->latest()
-    ->get();
-    return view('pedidos.create', compact(
-        'insumos',
-        'historicoPedidos'
-    ));
-}
+    {
+        $user = auth()->user();
+        
+        if (!$user->currentTeam) {
+            return redirect()->back()->with('error', 'Usuário não está associado a nenhuma equipe.');
+        }
+
+        $insumos = $user->currentTeam->insumos()
+            ->with(['team' => function($query) {
+                $query->select('id', 'name');
+            }])
+            ->get();
+
+        $historicoPedidos = Pedido::where('team_id', $user->currentTeam->id)
+            ->latest()
+            ->limit(10) // Limita o histórico para melhor performance
+            ->get(['id', 'created_at', 'file_path', 'status']);
+
+        return view('pedidos.create', compact('insumos', 'historicoPedidos'));
+    }
 
 public function sendPedido(Request $request)
 {
-    $validated = $request->validate([
-        'items' => 'required|array|min:1',
-        'items.*.insumo_id' => 'required|exists:insumos,id',
-        'items.*.quantidade' => 'required|numeric|min:0.1',
-    ]);
+    $validated = $this->validatePedidoRequest($request);
+    $user = Auth::user();
+    
+    if (!$user->currentTeam) {
+        return redirect()->back()->with('error', 'Usuário não está associado a nenhuma equipe.');
+    }
 
-    DB::beginTransaction();
-
-    try {
-        $usuario = Auth::user();
-        
-        if (!$usuario->currentTeam) {
-            throw new \Exception('Usuário não está associado a nenhuma equipe.');
-        }
-
-        // Sanitiza os dados para UTF-8
-        $nomeUsuario = mb_convert_encoding($usuario->name, 'UTF-8', 'UTF-8');
-        $nomeEquipe = mb_convert_encoding($usuario->currentTeam->name, 'UTF-8', 'UTF-8');
-
-        // Obtém os insumos em uma única consulta
-        $insumosIds = collect($validated['items'])->pluck('insumo_id')->unique();
-        $insumos = Insumo::whereIn('id', $insumosIds)->get()->keyBy('id');
-
-        // Processa os itens com sanitização UTF-8
-        $insumosSelecionados = collect($validated['items'])->map(function ($item) use ($insumos) {
-            $insumo = $insumos[$item['insumo_id'] ?? null];
+    return DB::transaction(function () use ($validated, $user) {
+        try {
+            $pedido = $this->createPedidoRecord($user);
+            $insumosData = $this->processSelectedItems($validated['items']);
+            $fileName = $this->generateFileName($pedido->id);
             
-            if (!$insumo) {
-                throw new \Exception("Insumo ID {$item['insumo_id']} não encontrado.");
+            $this->generateAndSaveExcel($insumosData, $user, $pedido, $fileName);
+            $this->sendNotificationEmail($insumosData, $pedido, $user, $fileName);
+            
+            return redirect()->back()
+                ->with('success', 'Pedido enviado com sucesso! 📩 Excel salvo e anexado!');
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar pedido: ' . $e->getMessage(), [
+                'user_id' => $user->id,
+                'team_id' => $user->currentTeam->id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()->back()
+                ->with('error', 'Erro ao processar pedido: ' . $e->getMessage());
+        }
+    });
+}
+
+protected function validatePedidoRequest(Request $request): array
+{
+    return $request->validate([
+        'items' => 'required|array|min:1',
+        'items.*.insumo_id' => [
+            'required',
+            'exists:insumos,id',
+            function ($attribute, $value, $fail) {
+                $teamInsumos = auth()->user()->currentTeam->insumos()
+                    ->pluck('insumos.id');
+                
+                if (!$teamInsumos->contains($value)) {
+                    $fail('O insumo selecionado não está disponível para sua equipe.');
+                }
             }
+        ],
+        'items.*.quantidade' => 'required|numeric|min:0.1|max:1000',
+    ]);
+}
 
-            return [
-                'nome' => mb_convert_encoding($insumo->nome, 'UTF-8', 'UTF-8'),
-                'quantidade' => $item['quantidade'],
-                'unidade_medida' => mb_convert_encoding($insumo->unidade_medida ?? 'un', 'UTF-8', 'UTF-8'),
-            ];
-        })->toArray();
-
-        // Cria o registro no banco com file_path temporário
-        $pedido = Pedido::create([
-            'team_id' => $usuario->currentTeam->id,
-            'user_id' => $usuario->id,
+    /**
+     * Create the initial pedido record
+     */
+    protected function createPedidoRecord(User $user): Pedido
+    {
+        return Pedido::create([
+            'team_id' => $user->currentTeam->id,
+            'user_id' => $user->id,
             'status' => 'pendente',
             'file_path' => 'temp', // Valor temporário
         ]);
+    }
 
-        // Gera o nome do arquivo com o ID
-        $fileName = "pedidos/pedido_{$pedido->id}_" . now()->format('YmdHis') . ".xlsx";
-        
-        // Cria e salva o Excel
+    /**
+     * Process and validate selected items
+     */
+    protected function processSelectedItems(array $items): array
+    {
+        $insumosIds = collect($items)->pluck('insumo_id')->unique();
+        $insumos = Insumo::whereIn('id', $insumosIds)
+            ->get(['id', 'nome', 'unidade_medida'])
+            ->keyBy('id');
+
+        return collect($items)->map(function ($item) use ($insumos) {
+            if (!isset($insumos[$item['insumo_id']])) {
+                throw new \Exception("Insumo ID {$item['insumo_id']} não encontrado.");
+            }
+
+            $insumo = $insumos[$item['insumo_id']];
+            
+            return [
+                'nome' => $this->sanitizeUtf8($insumo->nome),
+                'quantidade' => (float) $item['quantidade'],
+                'unidade_medida' => $this->sanitizeUtf8($insumo->unidade_medida ?? 'un'),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Generate Excel file and save to storage
+     */
+    protected function generateAndSaveExcel(
+        array $insumosData, 
+        User $user, 
+        Pedido $pedido,
+        string $fileName
+    ): void {
         $export = new PedidoInsumosExport(
-            $insumosSelecionados, 
-            $nomeUsuario, 
-            $nomeEquipe,
+            $insumosData,
+            $this->sanitizeUtf8($user->name),
+            $this->sanitizeUtf8($user->currentTeam->name),
             $pedido->id
         );
 
@@ -268,41 +342,51 @@ public function sendPedido(Request $request)
             throw new \Exception('Falha ao salvar o arquivo do pedido.');
         }
 
-        // Atualiza com o caminho real do arquivo
         $pedido->update(['file_path' => $fileName]);
+    }
 
-        // Envia o e-mail (versão síncrona para testes)
+    /**
+     * Send notification email with attachment
+     */
+    protected function sendNotificationEmail(
+        array $insumosData,
+        Pedido $pedido,
+        User $user,
+        string $fileName
+    ): void {
+        $email = new PedidoInsumos(
+            $insumosData,
+            $pedido->id,
+            $this->sanitizeUtf8($user->name),
+            $this->sanitizeUtf8($user->currentTeam->name)
+        );
+
+        $filePath = Storage::disk('public')->path($fileName);
+        
         Mail::to('administrativo@c3saude.com.br')
             ->cc(['matheus.martins@c3saude.com.br', 'lais.costa@c3saude.com.br'])
-            ->send(
-                (new PedidoInsumos(
-                    $insumosSelecionados,
-                    $pedido->id,
-                    $nomeUsuario,
-                    $nomeEquipe
-                ))->attachData(
-                    $fileContent,
-                    "pedido_insumos_{$pedido->id}.xlsx",
-                    ['mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-                )
-            );
-
-        DB::commit();
-
-        return redirect()->back()
-               ->with('success', 'Pedido enviado com sucesso! 📩 Excel salvo e anexado!');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Erro ao enviar pedido: ' . $e->getMessage(), [
-            'user_id' => Auth::id(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return redirect()->back()
-               ->with('error', 'Erro ao processar pedido: ' . $e->getMessage());
+            ->send($email->attach($filePath, [
+                'as' => "pedido_insumos_{$pedido->id}.xlsx",
+                'mime' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ]));
     }
-}
+
+    /**
+     * Generate consistent filename for the order
+     */
+    protected function generateFileName(int $pedidoId): string
+    {
+        return "pedidos/pedido_{$pedidoId}_" . now()->format('Ymd_His') . ".xlsx";
+    }
+
+    /**
+     * Sanitize UTF-8 strings
+     */
+    protected function sanitizeUtf8(string $input): string
+    {
+        return mb_convert_encoding($input, 'UTF-8', 'UTF-8');
+    }
+
     public function historicoMovimentacao()
     {
         $logs = LogMovimentacao::with('user', 'insumo', 'team')
