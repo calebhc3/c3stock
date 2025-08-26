@@ -10,9 +10,8 @@ use Illuminate\Support\Str;
 
 class TeamAndUserSeeder extends Seeder
 {
-    private const DEFAULT_PASSWORD = 'SenhaPadrão@123';
     private const TOTAL_EDITORES = 3;
-
+    private const DEFAULT_PASSWORD = 'password123';
     public function run(): void
     {
         $teamsData = collect([
@@ -31,6 +30,9 @@ class TeamAndUserSeeder extends Seeder
             ['cnpj' => '42.446.277/0018-30', 'razao_social' => 'SHPX LOGISTICA LTDA FILIAL SOC-SP06 GUARULHOS', 'cidade' => 'GUARULHOS', 'estado' => 'SP', 'cep' => '07251-500', 'name' => 'GUARULHOS'],
             ['cnpj' => '42.446.277/0001-92', 'razao_social' => 'SHPX LOGISTICA LTDA.', 'cidade' => 'SÃO PAULO', 'estado' => 'SP', 'cep' => '00000-000', 'name' => 'MATRIZ B32'],
             ['cnpj' => '42.446.277/0001-91', 'razao_social' => 'SHPX LOGISTICA LTDA.', 'cidade' => 'SÃO PAULO', 'estado' => 'SP', 'cep' => '00000-000', 'name' => 'MATRIZ FLP'],
+            ['cnpj' => '42.446.277/0001-91', 'razao_social' => 'SHPX LOGISTICA LTDA FILIAL SOC-SP10 IBITINGA', 'cidade' => 'IBITINGA', 'estado' => 'SP', 'cep' => '00000-000', 'name' => 'IBITINGA'],
+            ['cnpj' => '42.446.277/0001-91', 'razao_social' => 'SHPX LOGISTICA LTDA FILIAL SOC-SC1 ITAJAÍ', 'cidade' => 'ITAJAÍ', 'estado' => 'SC', 'cep' => '00000-000', 'name' => 'ITAJAÍ'],
+            ['cnpj' => '42.446.277/0001-91', 'razao_social' => 'SHPX LOGISTICA LTDA.', 'cidade' => 'SÃO BERNARDO DO CAMPO', 'estado' => 'SP', 'cep' => '00000-000', 'name' => 'SÃO BERNARDO DO CAMPO'],
         ]);
 
         // Criar usuário owner (administrador geral)

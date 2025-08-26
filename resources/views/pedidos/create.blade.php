@@ -12,22 +12,23 @@
     <div class="py-4 flex justify-center">
         <div class="max-w-7xl bg-white shadow-md rounded-lg p-4 border border-gray-300">
             @php
+            $teamName = auth()->user()->currentTeam->name;
+$email = auth()->user()->email;
+
                 $hoje = now();
                 $dia = $hoje->day;
                 $mes = $hoje->month;
                 $ano = $hoje->year;
 
-                // Special dates: today (25/06/2025) and tomorrow (26/06/2025)
-                $podePedir = ($dia == 25 && $mes == 6 && $ano == 2025) || 
-                            ($dia == 26 && $mes == 6 && $ano == 2025);
+                $podePedir = ($dia == 31) || ($dia == 30);
                 $ehAdmin = auth()->user()->isTeamAdmin();
             @endphp
 
             <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded text-sm text-center mb-4">
                 @if($podePedir)
-                    ⚠️ <strong>ATENÇÃO:</strong> Pedidos liberados excepcionalmente hoje (25/06) e amanhã (26/06).<br>
+                    ⚠️ <strong>ATENÇÃO:</strong> Pedidos liberados no último dia de cada mês.<br>
                 @else
-                    ⚠️ Os pedidos normalmente só podem ser realizados nos dias <strong>1</strong> e <strong>15</strong> de cada mês.<br>
+                    ⚠️ Os pedidos normalmente só podem ser realizados no<strong> último dia </strong>de cada mês.<br>
                 @endif
                 🕒 O prazo para recebimento dos insumos é de até <strong>20</strong> dias.
             </div>
@@ -58,15 +59,14 @@
                 <button type="button" id="add-item" class="w-full mt-5 text-xs px-3 py-1 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 transition flex items-center justify-center gap-1">
                     ➕ Adicionar item
                 </button>
-
+                @if(!$podePedir && !$ehAdmin)
+                    <div class="text-center text-red-600 text-sm font-semibold">
+                        🚫 Você não pode fazer pedidos hoje. Aguarde até o último dia do mês.
+                    </div>
+                    @else
                 <!-- Submit Button -->
-                @if($podePedir || $ehAdmin)
                     <button type="submit" class="w-full px-3 mt-10 py-1 text-white bg-c3turquoise text-sm rounded-md hover:bg-c3turquoise transition">
                         📬 Enviar Pedido
-                    </button>
-                @else
-                    <button type="button" disabled class="w-full px-3 mt-10 py-1 bg-gray-300 text-gray-500 text-sm rounded-md cursor-not-allowed">
-                        🚫 Pedido indisponível
                     </button>
                 @endif
             </form>

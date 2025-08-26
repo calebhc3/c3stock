@@ -220,7 +220,7 @@ class InsumoController extends Controller
             }])
             ->get();
 
-        $historicoPedidos = Pedido::where('team_id', $user->currentTeam->id)
+        $historicoPedidos = Pedido::where('user_id', $user->id)
             ->latest()
             ->limit(10) // Limita o histórico para melhor performance
             ->get(['id', 'created_at', 'file_path', 'status']);
