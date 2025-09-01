@@ -30,7 +30,7 @@ $email = auth()->user()->email;
                 $mes = $hoje->month;
                 $ano = $hoje->year;
 
-                $podePedir = ($teamName === 'SÃO BERNARDO DO CAMPO');
+                $podePedir = ($dia == 31) || ($dia == 30);
                 $ehAdmin = auth()->user()->isTeamAdmin();
             ?>
 
@@ -69,12 +69,16 @@ $email = auth()->user()->email;
                 <button type="button" id="add-item" class="w-full mt-5 text-xs px-3 py-1 border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 transition flex items-center justify-center gap-1">
                     ➕ Adicionar item
                 </button>
-
+                <?php if(!$podePedir && !$ehAdmin): ?>
+                    <div class="text-center text-red-600 text-sm font-semibold">
+                        🚫 Você não pode fazer pedidos hoje. Aguarde até o último dia do mês.
+                    </div>
+                    <?php else: ?>
                 <!-- Submit Button -->
                     <button type="submit" class="w-full px-3 mt-10 py-1 text-white bg-c3turquoise text-sm rounded-md hover:bg-c3turquoise transition">
                         📬 Enviar Pedido
                     </button>
-
+                <?php endif; ?>
             </form>
 
             <div class="mt-10 text-sm text-gray-500">
@@ -114,6 +118,16 @@ $email = auth()->user()->email;
             </div>
         </div>
     </div>
+<?php if(auth()->user()->email === 'owner@c3stock.com'): ?>
+    <form action="<?php echo e(route('teams.togglePedidos', $team->id)); ?>" method="POST" class="text-center mb-4">
+        <?php echo csrf_field(); ?>
+        <button type="submit" class="px-4 py-2 rounded text-white text-sm 
+            <?php echo e($team->pedidos_liberados ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'); ?>">
+            <?php echo e($team->pedidos_liberados ? '🔒 Bloquear Pedidos' : '🔓 Liberar Pedidos'); ?>
+
+        </button>
+    </form>
+<?php endif; ?>
 
     <!-- Hidden template for cloning via JS -->
     <div id="item-template" class="hidden">
